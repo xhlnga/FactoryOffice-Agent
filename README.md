@@ -319,6 +319,12 @@ audit_logs.json
 
 ## 系统结构
 
+
+<img width="1400" height="920" alt="image" src="https://github.com/user-attachments/assets/089fe4ee-7a91-42ba-b5b2-d9352ed3dadf" />
+
+
+
+
 ```text
 FactoryOffice-Agent/
 ├── 00_project_truth/                         # 项目事实中心
