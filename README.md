@@ -271,6 +271,9 @@ audit_logs.json
 
 ## 系统结构
 
+
+```
+
 FactoryOffice-Agent/
 ├── 00_project_truth/                         # 项目事实中心
 │   └── PROJECT_SSOT.md                       # 项目唯一真源，定义项目名称、定位、范围、边界、技术栈、工作流和不做什么
