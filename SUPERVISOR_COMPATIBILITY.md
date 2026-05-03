@@ -4,7 +4,7 @@
 
 本文档用于帮助业务负责人、管理人员、信息化负责人和技术负责人快速理解 FactoryOffice-Agent 的业务价值、适用范围、运行机制和风险边界。
 
-本文档不替代项目唯一真源。项目事实、技术路线和功能边界以 `00_project_truth/PROJECT_SSOT.md` 为准。
+项目事实、技术路线和功能边界以 `00_project_truth/PROJECT_SSOT.md` 为准。
 
 ## 2. 项目解决什么问题
 
