@@ -1,0 +1,58 @@
+[
+  {
+    "id": 1,
+    "username": "admin",
+    "role": "admin",
+    "department": "信息化办公室",
+    "created_at": "2026-01-02T09:00:00+08:00"
+  },
+  {
+    "id": 2,
+    "username": "zhang_li",
+    "role": "employee",
+    "department": "采购部",
+    "created_at": "2026-01-02T09:05:00+08:00"
+  },
+  {
+    "id": 3,
+    "username": "li_qiang",
+    "role": "employee",
+    "department": "设备部",
+    "created_at": "2026-01-02T09:10:00+08:00"
+  },
+  {
+    "id": 4,
+    "username": "zhou_ting",
+    "role": "employee",
+    "department": "质量部",
+    "created_at": "2026-01-02T09:15:00+08:00"
+  },
+  {
+    "id": 5,
+    "username": "wang_min",
+    "role": "manager",
+    "department": "安全环保部",
+    "created_at": "2026-01-02T09:20:00+08:00"
+  },
+  {
+    "id": 6,
+    "username": "chen_hao",
+    "role": "manager",
+    "department": "生产部",
+    "created_at": "2026-01-02T09:25:00+08:00"
+  },
+  {
+    "id": 7,
+    "username": "sun_yan",
+    "role": "manager",
+    "department": "财务部",
+    "created_at": "2026-01-02T09:30:00+08:00"
+  },
+  {
+    "id": 8,
+    "username": "zhao_lei",
+    "role": "manager",
+    "department": "项目管理办公室",
+    "created_at": "2026-01-02T09:35:00+08:00"
+  }
+]

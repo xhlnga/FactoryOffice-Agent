@@ -1,0 +1,12 @@
+本目录用于保存数据库迁移脚本。
+
+常用命令：
+
+    alembic upgrade head
+    alembic revision --autogenerate -m "说明本次表结构变化"
+
+注意：
+
+- 数据库地址从 app.core.config.settings.database_url 读取。
+- PostgreSQL 需要启用 pgvector 扩展，首个迁移会执行 CREATE EXTENSION IF NOT EXISTS vector。
+- 删除文档采用软删除字段 deleted_at，不应在业务接口中直接物理删除知识库资料。

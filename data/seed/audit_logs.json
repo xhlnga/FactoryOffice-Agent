@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "user_id": 3,
+    "action": "knowledge_ask",
+    "input": "空压机 E07 报警并导致 A3 产线暂停，应该怎么处理？",
+    "output": "根据《设备维修手册_空压机》，E07 为压力传感器异常。若生产线停机，应升级为 P1 工单，停机、断电、泄压并检查传感器接线、机械压力表读数和过滤器压差。提交工单前需要人工确认。",
+    "tool_name": "search_knowledge_base",
+    "tool_args": {
+      "query": "空压机 E07 报警 A3 产线暂停",
+      "top_k": 5,
+      "sources": [
+        "设备维修手册_空压机.md",
+        "安全生产规范.md"
+      ]
+    },
+    "status": "success",
+    "created_at": "2026-01-07T09:21:00+08:00"
+  },
+  {
+    "id": 2,
+    "user_id": 3,
+    "action": "create_maintenance_ticket",
+    "input": "{'ticket_type': '设备维修', 'title': 'A3 产线空压机 E07 压力传感器异常', 'priority': 'urgent'}",
+    "output": "{'ticket_id': 1}",
+    "tool_name": "create_maintenance_ticket",
+    "tool_args": {
+      "ticket_type": "设备维修",
+      "title": "A3 产线空压机 E07 压力传感器异常",
+      "priority": "urgent",
+      "created_by": 3
+    },
+    "status": "success",
+    "created_at": "2026-01-07T09:26:00+08:00"
+  },
+  {
+    "id": 3,
+    "user_id": 2,
+    "action": "preview_purchase_request",
+    "input": "申请采购 4 个空压机过滤器滤芯，用于 A3 产线空压机稳定性改善。",
+    "output": "已生成采购申请草稿，预算 2800 元，供应商为苏州恒压机电设备有限公司。提交正式采购申请前需要人工确认。",
+    "tool_name": "preview_purchase_request",
+    "tool_args": {
+      "item_name": "空压机过滤器滤芯",
+      "quantity": 4,
+      "budget": 2800.0,
+      "supplier": "苏州恒压机电设备有限公司"
+    },
+    "status": "pending",
+    "created_at": "2026-01-09T17:43:00+08:00"
+  },
+  {
+    "id": 4,
+    "user_id": 8,
+    "action": "meeting_to_tasks",
+    "input": "张丽 1 月 12 日前确认滤芯交期；赵磊下周更新点检表；李强 1 月 17 日前完成滤芯更换和试运行。",
+    "output": "识别出 3 条任务，其中 2 条信息完整，1 条截止时间需要人工确认。批量创建任务前需要人工审批。",
+    "tool_name": "preview_tasks_from_meeting",
+    "tool_args": {
+      "source": "2026-01-09 A3 产线空压机异常复盘会",
+      "detected_tasks": 3,
+      "requires_approval": true
+    },
+    "status": "success",
+    "created_at": "2026-01-09T17:12:00+08:00"
+  },
+  {
+    "id": 5,
+    "user_id": 4,
+    "action": "weekly_report_generate",
+    "input": "根据 A3 空压机工单、滤芯采购申请和会议纪要生成本周项目周报。",
+    "output": "已生成《A3 产线空压机稳定性改善项目周报》草稿，总体状态为黄色，主要风险为滤芯采购交期未确认。周报草稿需项目负责人审核后发布。",
+    "tool_name": "generate_weekly_report",
+    "tool_args": {
+      "project_name": "A3 产线空压机稳定性改善项目",
+      "sources": [
+        "tickets",
+        "purchase_requests",
+        "meeting_minutes"
+      ],
+      "requires_human_review": true
+    },
+    "status": "success",
+    "created_at": "2026-01-09T18:05:00+08:00"
+  },
+  {
+    "id": 6,
+    "user_id": 5,
+    "action": "safety_risk_check",
+    "input": "临时焊一下支架，可以不走动火审批吗？",
+    "output": "不可以。焊接、切割、打磨产生火花等均属于动火作业，必须办理动火审批，并落实清理可燃物、灭火器材和现场监护。",
+    "tool_name": "search_knowledge_base",
+    "tool_args": {
+      "query": "临时焊接 动火审批",
+      "sources": [
+        "安全生产规范.md"
+      ]
+    },
+    "status": "success",
+    "created_at": "2026-01-10T11:30:00+08:00"
+  }
+]

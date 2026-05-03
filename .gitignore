@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# 环境变量与密钥
+.env
+.env.*
+!.env.example
+
+# 本地上传文件，只保留目录
+data/uploads/*
+!data/uploads/.gitkeep
+backend/data/uploads/*
+
+# 系统和编辑器文件
+.DS_Store
+.idea/
+.vscode/
+
+# Docker / 数据库本地残留
+postgres_data/

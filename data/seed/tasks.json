@@ -1,0 +1,57 @@
+[
+  {
+    "id": 1,
+    "title": "更新空压机点检表",
+    "description": "将过滤器压差、压力传感器读数和末端压力波动纳入每日点检项目，形成新版点检表。",
+    "assignee": "赵磊",
+    "due_date": "2026-01-16",
+    "priority": "medium",
+    "status": "in_progress",
+    "source": "2026-01-09 A3 产线空压机异常复盘会",
+    "created_at": "2026-01-09T17:20:00+08:00"
+  },
+  {
+    "id": 2,
+    "title": "完成空压机滤芯询价并确认交期",
+    "description": "采购部需要完成空压机过滤器滤芯询价、比价和最快交期确认，用于支持 A3 产线空压机稳定性改善项目。",
+    "assignee": "张丽",
+    "due_date": "2026-01-12",
+    "priority": "high",
+    "status": "todo",
+    "source": "会议纪要转任务",
+    "created_at": "2026-01-09T17:25:00+08:00"
+  },
+  {
+    "id": 3,
+    "title": "复测 B2 客户异常样件尺寸",
+    "description": "质量部对 B2 客户退回样件进行复测，输出复测记录并确认是否需要补充 8D 报告证据。",
+    "assignee": "周婷",
+    "due_date": "2026-01-12",
+    "priority": "high",
+    "status": "in_progress",
+    "source": "质量异常处理流程",
+    "created_at": "2026-01-10T10:10:00+08:00"
+  },
+  {
+    "id": 4,
+    "title": "清理空压机房临时物料",
+    "description": "移走靠近空压机房通道的临时物料，恢复点检通道和应急通道畅通。",
+    "assignee": "陈浩",
+    "due_date": "2026-01-10",
+    "priority": "medium",
+    "status": "done",
+    "source": "安全隐患记录",
+    "created_at": "2026-01-09T16:40:00+08:00"
+  },
+  {
+    "id": 5,
+    "title": "补充客户现场差旅报销附件",
+    "description": "补充客户质量问题现场处理的出差申请、交通票据、住宿发票和客户现场签到证明。",
+    "assignee": "李强",
+    "due_date": "2026-01-14",
+    "priority": "low",
+    "status": "todo",
+    "source": "差旅报销制度",
+    "created_at": "2026-01-11T09:30:00+08:00"
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "id": 1,
+    "action_type": "create_purchase_request",
+    "action_payload": {
+      "item_name": "空压机过滤器滤芯",
+      "quantity": 4,
+      "reason": "A3 产线空压机过滤器压差接近上限，需更换备件以降低 E07 报警复发风险。",
+      "budget": 2800.0,
+      "supplier": "苏州恒压机电设备有限公司",
+      "created_by": 2
+    },
+    "status": "pending",
+    "reviewer": null,
+    "reviewed_at": null,
+    "executed_at": null,
+    "execution_result": null,
+    "comment": "等待设备主管和采购负责人确认备件必要性与交期。",
+    "created_at": "2026-01-09T17:45:00+08:00"
+  },
+  {
+    "id": 2,
+    "action_type": "create_maintenance_ticket",
+    "action_payload": {
+      "ticket_type": "设备维修",
+      "title": "A3 产线空压机 E07 压力传感器异常",
+      "description": "A3 产线空压机出现 E07 报警并造成生产暂停，建议提交 P1 维修工单，检查压力传感器接线、机械压力表读数和过滤器压差。",
+      "priority": "urgent",
+      "created_by": 3
+    },
+    "status": "approved",
+    "reviewer": "陈浩",
+    "reviewed_at": "2026-01-07T09:25:00+08:00",
+    "executed_at": "2026-01-07T09:26:00+08:00",
+    "execution_result": {
+      "ticket_id": 1
+    },
+    "comment": "已确认产线暂停，批准创建 P1 维修工单。",
+    "created_at": "2026-01-07T09:22:00+08:00"
+  },
+  {
+    "id": 3,
+    "action_type": "create_tasks",
+    "action_payload": {
+      "source": "2026-01-09 A3 产线空压机异常复盘会",
+      "tasks": [
+        {
+          "title": "完成空压机滤芯询价并确认交期",
+          "description": "采购部张丽需要在 2026-01-12 前完成空压机过滤器滤芯询价并确认最快交期。",
+          "assignee": "张丽",
+          "due_date": "2026-01-12",
+          "priority": "high"
+        },
+        {
+          "title": "更新空压机点检表",
+          "description": "设备部赵磊需要将过滤器压差纳入每日点检记录。",
+          "assignee": "赵磊",
+          "due_date": "2026-01-16",
+          "priority": "medium"
+        }
+      ]
+    },
+    "status": "pending",
+    "reviewer": null,
+    "reviewed_at": null,
+    "executed_at": null,
+    "execution_result": null,
+    "comment": "会议纪要识别出 2 条任务，等待项目负责人确认后批量创建。",
+    "created_at": "2026-01-09T17:15:00+08:00"
+  },
+  {
+    "id": 4,
+    "action_type": "delete_document",
+    "action_payload": {
+      "document_id": 6,
+      "reason": "上传了重复版本的项目周报模板，申请删除旧版文档记录。"
+    },
+    "status": "rejected",
+    "reviewer": "赵磊",
+    "reviewed_at": "2026-01-10T14:10:00+08:00",
+    "executed_at": null,
+    "execution_result": null,
+    "comment": "制度和模板类文档暂不直接删除，需先确认是否为正式替换版本。",
+    "created_at": "2026-01-10T13:50:00+08:00"
+  }
+]

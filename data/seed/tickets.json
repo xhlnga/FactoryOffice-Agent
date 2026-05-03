@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "ticket_type": "设备维修",
+    "title": "A3 产线空压机 E07 压力传感器异常",
+    "description": "A3 产线空压机出现 E07 报警，末端压力波动，生产暂停 35 分钟。需检查压力传感器接线、机械压力表读数、端子排和过滤器压差。",
+    "priority": "urgent",
+    "status": "processing",
+    "created_by": 3,
+    "created_at": "2026-01-07T09:18:00+08:00"
+  },
+  {
+    "id": 2,
+    "ticket_type": "设备维修",
+    "title": "空压机房过滤器压差接近上限",
+    "description": "点检发现空压机过滤器压差接近上限，暂未导致停机，但存在供气稳定性风险。需安排备件更换并加严点检。",
+    "priority": "high",
+    "status": "open",
+    "created_by": 3,
+    "created_at": "2026-01-08T15:30:00+08:00"
+  },
+  {
+    "id": 3,
+    "ticket_type": "质量异常",
+    "title": "B2 客户安装孔尺寸偏差 NCR",
+    "description": "B2 客户反馈安装孔尺寸偏差，已隔离在库 320 件并启动原因分析，初步怀疑夹具定位销磨损。",
+    "priority": "high",
+    "status": "processing",
+    "created_by": 4,
+    "created_at": "2026-01-05T14:20:00+08:00"
+  },
+  {
+    "id": 4,
+    "ticket_type": "安全隐患",
+    "title": "空压机房通道临时物料占用",
+    "description": "安全巡检发现空压机房点检通道附近存在临时物料，影响巡检通行。已通知生产部和仓储物流部转移。",
+    "priority": "medium",
+    "status": "resolved",
+    "created_by": 5,
+    "created_at": "2026-01-09T16:20:00+08:00"
+  }
+]
