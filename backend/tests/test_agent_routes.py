@@ -64,6 +64,16 @@ class AgentRoutesTest(unittest.TestCase):
         self.assertEqual(state["missing_fields"], [])
         self.assertIn("补充信息", state["effective_message"])
 
+    def test_agent_accepts_empty_context(self) -> None:
+        """外部调用传入空上下文时，Agent 仍应按单轮任务处理。"""
+        state = run_factory_office_agent(
+            "申请采购20个温度传感器，用于产线设备改造。",
+            context=None,
+        )
+
+        self.assertEqual(state["intent"], "purchase_request")
+        self.assertEqual(state["task_status"], "collecting_info")
+
     def test_purchase_action_with_need_keyword_is_not_misclassified_as_knowledge(self) -> None:
         """“需要采购”是业务动作，不是制度问答。"""
         state = run_factory_office_agent("产线改造需要采购20个温度传感器，预算48000元，供应商为华南传感器。")

@@ -18,7 +18,7 @@ def classify_intent_node(state: FactoryAgentState) -> FactoryAgentState:
     当前使用确定性关键词规则，后续可替换为 LLM 分类。
     """
     message = state.get("message", "")
-    context = state.get("context", {})
+    context = state.get("context") or {}
     context_intent = _intent_from_context(context)
     intent = context_intent or classify_intent(message)
     effective_message = build_effective_message(message, context)
@@ -122,7 +122,7 @@ def select_tools_node(state: FactoryAgentState) -> FactoryAgentState:
     """工具选择节点，根据意图生成工具调用草稿。"""
     intent = state.get("intent", "unknown")
     sop = match_sop(intent)
-    slot_result = fill_slots(sop, state.get("message", ""), state.get("context", {}))
+    slot_result = fill_slots(sop, state.get("message", ""), state.get("context") or {})
     missing_fields = slot_result.missing_fields
 
     if sop and missing_fields:

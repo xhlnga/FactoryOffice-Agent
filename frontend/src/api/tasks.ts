@@ -40,7 +40,7 @@ export function listTasks() {
   return apiGet<ApiListResponse<TaskItem>>('/tasks')
 }
 
-// 当前后端仍是预留入口；批量或高风险任务应由审批流程创建。
+// 创建任务会先生成审批记录，批准后才写入正式任务表。
 export function createTask(payload: TaskCreateRequest) {
   return apiPost<TaskCreateResponse, TaskCreateRequest>('/tasks', payload)
 }

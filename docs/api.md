@@ -145,17 +145,38 @@ Agent 总入口，用于执行意图识别、知识检索、工具选择和审�
 
 ```json
 {
-  "message": "A3 产线空压机 E07 报警，末端压力波动，产线暂停 35 分钟。",
-  "user_id": 3
+  "message": "帮我申请采购20个温度传感器，用于产线设备改造。",
+  "user_id": 3,
+  "context": {}
+}
+```
+
+多轮补槽时，前端或外部系统可以把上一轮任务上下文放入 `context`：
+
+```json
+{
+  "message": "预算48000元，供应商为华南传感器。",
+  "context": {
+    "task_status": "collecting_info",
+    "active_intent": "purchase_request",
+    "active_message": "帮我申请采购20个温度传感器，用于产线设备改造。"
+  }
 }
 ```
 
 响应包含：
 
 - `intent`：识别出的任务类型
+- `sop_id`：命中的 SOP ID
+- `sop_name`：命中的 SOP 名称
+- `task_status`：当前任务状态，例如 `collecting_info`、`waiting_approval`
+- `slot_values`：当前已识别出的业务字段
+- `missing_fields`：缺失字段和追问提示
+- `next_question`：下一步需要用户补充的问题
 - `answer`：回答或处理建议
 - `tool_calls`：工具调用预览
 - `requires_approval`：是否需要人工确认
+- `trace`：Agent 执行轨迹，用于说明意图识别、SOP 匹配、补槽、工具选择和审批判断
 
 ## 6. 固定办公流程
 

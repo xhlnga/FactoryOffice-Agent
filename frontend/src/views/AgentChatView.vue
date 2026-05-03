@@ -13,6 +13,7 @@ const input = ref('采购超过 5 万怎么审批？')
 const loading = ref(false)
 const errorMessage = ref('')
 const messages = ref<ChatMessage[]>([])
+const activeContext = ref<Record<string, unknown> | null>(null)
 
 async function sendMessage() {
   const content = input.value.trim()
@@ -26,12 +27,16 @@ async function sendMessage() {
   messages.value.push({ role: 'user', content })
 
   try {
-    const response = await chatWithAgent({ message: content })
+    const response = await chatWithAgent({
+      message: content,
+      context: activeContext.value || undefined,
+    })
     messages.value.push({
       role: 'assistant',
       content: response.answer,
       result: response,
     })
+    activeContext.value = buildNextContext(content, response)
     input.value = ''
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'AI 助手调用失败。'
@@ -42,6 +47,27 @@ async function sendMessage() {
 
 function formatToolArgs(args: Record<string, unknown>) {
   return JSON.stringify(args, null, 2)
+}
+
+function resetContext() {
+  activeContext.value = null
+}
+
+function buildNextContext(message: string, response: AgentChatResponse) {
+  if (response.task_status !== 'collecting_info') {
+    return null
+  }
+
+  const sourceText = response.tool_calls[0]?.tool_args?.source_text
+
+  return {
+    task_status: response.task_status,
+    active_intent: response.intent,
+    active_message: typeof sourceText === 'string' ? sourceText : message,
+    sop_id: response.sop_id,
+    slot_values: response.slot_values,
+    missing_fields: response.missing_fields,
+  }
 }
 </script>
 
@@ -102,9 +128,15 @@ function formatToolArgs(args: Record<string, unknown>) {
         placeholder="例如：空压机 E07 报警，压力传感器读数异常，生产线 A 暂停。"
         @keydown.ctrl.enter="sendMessage"
       />
+      <p v-if="activeContext" class="muted-text compact">
+        当前有待补充流程上下文；如果要处理新事项，请先清空上下文。
+      </p>
       <div class="action-row">
         <button type="button" :disabled="loading" @click="sendMessage">
           {{ loading ? '处理中...' : '发送' }}
+        </button>
+        <button v-if="activeContext" type="button" class="secondary-button" @click="resetContext">
+          清空上下文
         </button>
       </div>
     </section>
