@@ -1,4 +1,10 @@
+from typing import Any
+
 from app.agents.graph_state import AgentIntent, AuditEvent, FactoryAgentState, ToolCallDraft
+from app.agents.slot_filling import build_clarification_question, build_effective_message, fill_slots
+from app.agents.sop_registry import match_sop, sop_to_trace_detail
+from app.agents.task_state import infer_task_status
+from app.agents.trace import append_trace_step
 from app.schemas.knowledge import KnowledgeSearchRequest
 from app.services.knowledge_service import search_knowledge
 from app.workflows.meeting_to_tasks import generate_task_drafts
@@ -12,16 +18,39 @@ def classify_intent_node(state: FactoryAgentState) -> FactoryAgentState:
     当前使用确定性关键词规则，后续可替换为 LLM 分类。
     """
     message = state.get("message", "")
-    intent = classify_intent(message)
+    context = state.get("context", {})
+    context_intent = _intent_from_context(context)
+    intent = context_intent or classify_intent(message)
+    effective_message = build_effective_message(message, context)
+    sop = match_sop(intent)
+    trace_steps = append_trace_step(
+        state.get("trace_steps", []),
+        step="classify_intent",
+        status="success",
+        detail={
+            "intent": intent,
+            "from_context": context_intent is not None,
+        },
+    )
+    trace_steps = append_trace_step(
+        trace_steps,
+        step="match_sop",
+        status="matched" if sop else "not_matched",
+        detail=sop_to_trace_detail(sop),
+    )
     return _merge_state(
         state,
         {
             "intent": intent,
+            "effective_message": effective_message,
+            "sop_id": sop.sop_id if sop else None,
+            "sop_name": sop.name if sop else None,
+            "trace_steps": trace_steps,
             "audit_events": _append_event(
                 state,
                 action="classify_intent",
                 status="success",
-                detail={"intent": intent},
+                detail={"intent": intent, "sop_id": sop.sop_id if sop else None},
             ),
         },
     )
@@ -37,10 +66,16 @@ def retrieve_knowledge_node(state: FactoryAgentState) -> FactoryAgentState:
         return _merge_state(
             state,
             {
-                "retrieved_chunks": [],
-                "audit_events": _append_event(
-                    state,
-                    action="retrieve_knowledge",
+            "retrieved_chunks": [],
+            "trace_steps": append_trace_step(
+                state.get("trace_steps", []),
+                step="retrieve_knowledge",
+                status="skipped",
+                detail={"reason": "db_session_missing"},
+            ),
+            "audit_events": _append_event(
+                state,
+                action="retrieve_knowledge",
                     status="skipped",
                     detail={"message": "当前 Agent 运行环境未传入数据库会话，已跳过知识库检索。"},
                 ),
@@ -49,7 +84,7 @@ def retrieve_knowledge_node(state: FactoryAgentState) -> FactoryAgentState:
 
     response = search_knowledge(
         db,
-        KnowledgeSearchRequest(query=state.get("message", ""), top_k=5),
+        KnowledgeSearchRequest(query=state.get("effective_message") or state.get("message", ""), top_k=5),
     )
     retrieved_chunks = [
         {
@@ -67,6 +102,12 @@ def retrieve_knowledge_node(state: FactoryAgentState) -> FactoryAgentState:
         state,
         {
             "retrieved_chunks": retrieved_chunks,
+            "trace_steps": append_trace_step(
+                state.get("trace_steps", []),
+                step="retrieve_knowledge",
+                status="success",
+                detail={"chunk_count": len(retrieved_chunks)},
+            ),
             "audit_events": _append_event(
                 state,
                 action="retrieve_knowledge",
@@ -80,23 +121,85 @@ def retrieve_knowledge_node(state: FactoryAgentState) -> FactoryAgentState:
 def select_tools_node(state: FactoryAgentState) -> FactoryAgentState:
     """工具选择节点，根据意图生成工具调用草稿。"""
     intent = state.get("intent", "unknown")
-    tool_calls = build_tool_calls(intent, state.get("message", ""))
+    sop = match_sop(intent)
+    slot_result = fill_slots(sop, state.get("message", ""), state.get("context", {}))
+    missing_fields = slot_result.missing_fields
+
+    if sop and missing_fields:
+        next_question = build_clarification_question(sop, missing_fields)
+        tool_calls = [
+            {
+                "tool_name": sop.preview_tool_name,
+                "tool_args": {
+                    "source_text": slot_result.effective_message,
+                    "missing_fields": missing_fields,
+                    "slot_values": slot_result.slot_values,
+                },
+                "requires_approval": False,
+                "reason": next_question,
+            }
+        ]
+    else:
+        next_question = None
+        tool_calls = build_tool_calls(intent, slot_result.effective_message)
+
     requires_approval = any(tool_call.get("requires_approval", False) for tool_call in tool_calls)
+    task_status = infer_task_status(
+        has_sop=sop is not None,
+        missing_fields=missing_fields,
+        requires_approval=requires_approval,
+        has_tool_calls=bool(tool_calls),
+        error=state.get("error"),
+    )
+    trace_steps = append_trace_step(
+        state.get("trace_steps", []),
+        step="slot_filling",
+        status="needs_clarification" if missing_fields else "complete",
+        detail={
+            "slot_values": slot_result.slot_values,
+            "missing_fields": missing_fields,
+        },
+    )
+    trace_steps = append_trace_step(
+        trace_steps,
+        step="select_tools",
+        status="success",
+        detail={
+            "tool_count": len(tool_calls),
+            "requires_approval": requires_approval,
+            "task_status": task_status,
+        },
+    )
 
     return _merge_state(
         state,
         {
+            "effective_message": slot_result.effective_message,
+            "slot_values": slot_result.slot_values,
+            "missing_fields": missing_fields,
+            "next_question": next_question,
+            "task_status": task_status,
             "tool_calls": tool_calls,
             "requires_approval": requires_approval,
             "approval_payload": {
                 "intent": intent,
+                "sop_id": sop.sop_id if sop else None,
+                "task_status": task_status,
+                "slot_values": slot_result.slot_values,
+                "missing_fields": missing_fields,
                 "tool_calls": tool_calls,
             } if requires_approval else {},
+            "trace_steps": trace_steps,
             "audit_events": _append_event(
                 state,
                 action="select_tools",
                 status="success",
-                detail={"tool_count": len(tool_calls), "requires_approval": requires_approval},
+                detail={
+                    "tool_count": len(tool_calls),
+                    "requires_approval": requires_approval,
+                    "task_status": task_status,
+                    "missing_fields": missing_fields,
+                },
             ),
         },
     )
@@ -111,6 +214,12 @@ def approval_gate_node(state: FactoryAgentState) -> FactoryAgentState:
     return _merge_state(
         state,
         {
+            "trace_steps": append_trace_step(
+                state.get("trace_steps", []),
+                step="approval_gate",
+                status="pending" if requires_approval else "skipped",
+                detail={"requires_approval": requires_approval},
+            ),
             "audit_events": _append_event(
                 state,
                 action="approval_gate",
@@ -130,11 +239,21 @@ def final_answer_node(state: FactoryAgentState) -> FactoryAgentState:
         requires_approval,
         state.get("tool_calls", []),
         state.get("retrieved_chunks", []),
+        sop_name=state.get("sop_name"),
+        task_status=state.get("task_status"),
+        missing_fields=state.get("missing_fields", []),
+        next_question=state.get("next_question"),
     )
     return _merge_state(
         state,
         {
             "answer": answer,
+            "trace_steps": append_trace_step(
+                state.get("trace_steps", []),
+                step="final_answer",
+                status="success",
+                detail={"intent": intent, "task_status": state.get("task_status")},
+            ),
             "audit_events": _append_event(
                 state,
                 action="final_answer",
@@ -258,14 +377,24 @@ def build_final_answer(
     requires_approval: bool,
     tool_calls: list[ToolCallDraft] | None = None,
     retrieved_chunks: list[dict] | None = None,
+    *,
+    sop_name: str | None = None,
+    task_status: str | None = None,
+    missing_fields: list[dict] | None = None,
+    next_question: str | None = None,
 ) -> str:
     """根据意图和审批状态生成当前阶段回答。"""
+    status_text = f"当前状态：{task_status}。" if task_status else ""
+    sop_text = f"命中 SOP：{sop_name}。" if sop_name else ""
+    if missing_fields and next_question:
+        return f"{sop_text}{status_text}{next_question}"
+
     if intent == "knowledge_qa" and retrieved_chunks:
         citation_text = "；".join(
             _format_retrieved_chunk_label(chunk)
             for chunk in retrieved_chunks[:3]
         )
-        return f"已检索到相关企业文档片段，可基于这些来源回答。引用来源：{citation_text}。"
+        return f"{sop_text}{status_text}已检索到相关企业文档片段，可基于这些来源回答。引用来源：{citation_text}。"
 
     intent_messages = {
         "knowledge_qa": "已识别为知识库问答请求，但当前没有检索到足够相关的企业文档片段，请先导入或补充对应制度、SOP、设备手册或流程文档。",
@@ -279,10 +408,10 @@ def build_final_answer(
     if not requires_approval and tool_calls:
         reason = tool_calls[0].get("reason")
         if reason:
-            return f"{intent_messages[intent]}{reason}"
+            return f"{sop_text}{status_text}{intent_messages[intent]}{reason}"
 
     suffix = "该动作需要人工确认后才能执行。" if requires_approval else "当前动作不涉及高风险写入。"
-    return f"{intent_messages[intent]}{suffix}"
+    return f"{sop_text}{status_text}{intent_messages[intent]}{suffix}"
 
 
 def _format_retrieved_chunk_label(chunk: dict) -> str:
@@ -371,6 +500,24 @@ def _append_event(
             "detail": detail,
         },
     ]
+
+
+def _intent_from_context(context: dict[str, Any]) -> AgentIntent | None:
+    """从多轮上下文中恢复正在补槽的业务意图。"""
+    status = context.get("task_status")
+    intent = context.get("active_intent") or context.get("intent")
+    valid_intents = {
+        "knowledge_qa",
+        "meeting_to_tasks",
+        "maintenance_ticket",
+        "quality_issue",
+        "purchase_request",
+        "weekly_report",
+        "unknown",
+    }
+    if status == "collecting_info" and intent in valid_intents:
+        return intent
+    return None
 
 
 def _merge_state(state: FactoryAgentState, patch: FactoryAgentState) -> FactoryAgentState:

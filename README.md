@@ -55,6 +55,54 @@ Agent 判断任务类型
 
 这个流程体现了企业 AI 应用的基本原则：AI 辅助准备材料，人负责确认和决策，系统负责记录和追踪。
 
+## Agent 编排机制
+
+FactoryOffice-Agent 采用“任务状态机 + SOP 配置 + 多轮补槽 + 审批门控 + Trace”的流程型 Agent 编排方式。
+
+Agent 不追求自由行动，而是围绕企业可控流程推进：
+
+```text
+识别意图
+  ↓
+匹配 SOP
+  ↓
+检查必填字段
+  ↓
+缺字段时进入 collecting_info 并追问
+  ↓
+字段完整后生成草稿
+  ↓
+需要正式写入时进入 waiting_approval
+  ↓
+审批通过后执行工具并写入审计日志
+```
+
+当前任务状态包括：
+
+```text
+new
+collecting_info
+waiting_approval
+approved
+executing
+completed
+failed
+cancelled
+suspended
+```
+
+Agent 响应会返回结构化 Trace，例如：
+
+```text
+识别意图：purchase_request
+命中 SOP：采购申请 SOP
+缺失字段：预算、供应商
+下一步状态：collecting_info
+是否需要审批：否
+```
+
+这使系统更适合企业场景：流程可解释、状态可追踪、动作可审批、结果可审计。
+
 ## 当前功能
 
 ### 企业知识库问答
@@ -188,9 +236,9 @@ B2 批次零件抽检发现 3 件尺寸超差，影响当前批次出货。
 
 审计日志用于追踪、复盘和排查问题。
 
-## 为什么说接近真实
+## 为什么说它高度拟真
 
-项目不只是文档内容，而是业务机制和工程结构。
+项目的拟真点不只是文档内容，而是业务机制和工程结构。
 
 ### 1. 有企业知识库
 
@@ -271,250 +319,53 @@ audit_logs.json
 
 ## 系统结构
 
-
-<img width="1400" height="920" alt="image" src="https://github.com/user-attachments/assets/49951da3-5498-48ee-8870-43e62216bc4b" />
-
-
-
-
-```
-
+```text
 FactoryOffice-Agent/
-├── 00_project_truth/                         # 项目事实中心
-│   └── PROJECT_SSOT.md                       # 项目唯一真源，定义项目名称、定位、范围、边界、技术栈、工作流
-│
-├── backend/                                  # FastAPI 后端服务
-│   ├── app/                                  # 后端主应用代码
-│   │   ├── __init__.py                       # Python 包标识
-│   │   ├── main.py                           # FastAPI 入口，创建 app、挂载路由、配置 CORS、注册异常处理
-│   │   │
-│   │   ├── api/                              # HTTP API 路由层
-│   │   │   ├── __init__.py                   # API 包标识
-│   │   │   └── v1/                           # API v1 版本目录
-│   │   │       ├── __init__.py               # v1 包标识
-│   │   │       ├── router.py                 # API v1 总路由，统一注册所有 endpoints
-│   │   │       └── endpoints/                # 具体业务接口
-│   │   │           ├── __init__.py           # endpoints 包标识
-│   │   │           ├── health.py             # 健康检查接口，验证后端服务是否可用
-│   │   │           ├── auth.py               # 本地用户身份模拟和角色验证入口
-│   │   │           ├── documents.py          # 文档上传、文档列表、文档详情、文档删除申请
-│   │   │           ├── knowledge.py          # 知识库检索和知识库问答接口
-│   │   │           ├── agent.py              # 通用 Agent 对话入口，识别意图并分发到知识库或业务流程
-│   │   │           ├── workflows.py          # 固定办公流程接口：会议、维修、质量、采购、周报
-│   │   │           ├── tasks.py              # 任务列表、任务详情、任务创建接口
-│   │   │           ├── tickets.py            # 工单列表、工单详情、工单创建接口
-│   │   │           ├── purchases.py          # 采购申请列表、详情、创建接口
-│   │   │           ├── approvals.py          # 审批列表、审批详情、批准、拒绝接口
-│   │   │           └── audit_logs.py         # 审计日志列表和详情查询接口
-│   │   │
-│   │   ├── core/                             # 后端基础设施层
-│   │   │   ├── __init__.py                   # core 包标识
-│   │   │   ├── config.py                     # 读取环境变量，管理数据库、上传目录、模型、CORS 等配置
-│   │   │   ├── database.py                   # SQLAlchemy Engine、Session、数据库依赖注入
-│   │   │   ├── security.py                   # 角色权限判断，定义员工、主管、管理员的接口访问边界
-│   │   │   ├── logging.py                    # 后端日志格式和日志级别配置
-│   │   │   └── exceptions.py                 # 统一异常类型和 FastAPI 异常处理
-│   │   │
-│   │   ├── models/                           # SQLAlchemy 数据库模型
-│   │   │   ├── __init__.py                   # 模型统一导入
-│   │   │   ├── base.py                       # SQLAlchemy Declarative Base 和通用时间字段
-│   │   │   ├── user.py                       # users 用户表模型
-│   │   │   ├── document.py                   # documents 文档表模型，记录上传文档和软删除状态
-│   │   │   ├── document_chunk.py             # document_chunks 文档切块和向量字段模型
-│   │   │   ├── task.py                       # tasks 任务表模型
-│   │   │   ├── ticket.py                     # tickets 工单表模型，覆盖设备维修和质量异常
-│   │   │   ├── purchase_request.py           # purchase_requests 采购申请表模型
-│   │   │   ├── approval.py                   # approvals 审批表模型，记录待确认动作和审批结果
-│   │   │   └── audit_log.py                  # audit_logs 审计日志表模型
-│   │   │
-│   │   ├── schemas/                          # Pydantic 请求和响应结构
-│   │   │   ├── __init__.py                   # schemas 包标识
-│   │   │   ├── common.py                     # 通用响应、分页、状态结构
-│   │   │   ├── user.py                       # 用户响应结构
-│   │   │   ├── document.py                   # 文档上传、文档详情、文档切块响应结构
-│   │   │   ├── knowledge.py                  # 知识库检索、问答、引用来源结构
-│   │   │   ├── agent.py                      # Agent 对话请求、响应、工具调用展示结构
-│   │   │   ├── workflow.py                   # 会议、维修、质量、采购、周报工作流结构
-│   │   │   ├── task.py                       # 任务创建、任务读取结构
-│   │   │   ├── ticket.py                     # 工单创建、工单读取结构
-│   │   │   ├── purchase_request.py           # 采购申请创建、读取结构
-│   │   │   ├── approval.py                   # 审批创建、审批读取、批准/拒绝结构
-│   │   │   └── audit_log.py                  # 审计日志读取结构
-│   │   │
-│   │   ├── services/                         # 业务服务层
-│   │   │   ├── __init__.py                   # services 包标识
-│   │   │   ├── document_service.py           # 文档保存、解析、切块、入库、软删除申请
-│   │   │   ├── knowledge_service.py          # 串联 RAG 检索、Prompt 构造、LLM 回答和引用来源
-│   │   │   ├── task_service.py               # 任务创建、查询、列表分页
-│   │   │   ├── ticket_service.py             # 设备维修工单和质量异常工单创建、查询
-│   │   │   ├── purchase_service.py           # 采购申请创建、字段校验、查询
-│   │   │   ├── approval_service.py           # 创建审批、批准审批、拒绝审批、审批后执行业务动作
-│   │   │   ├── approval_guard.py             # 高风险动作判断规则，决定是否必须进入人工审批
-│   │   │   ├── audit_service.py              # 写入和查询审计日志
-│   │   │   └── llm_service.py                # OpenAI-compatible LLM 调用封装和本地兜底回答
-│   │   │
-│   │   ├── rag/                              # RAG 知识库模块
-│   │   │   ├── __init__.py                   # rag 包标识
-│   │   │   ├── document_loader.py            # PDF、DOCX、TXT、Markdown 文档解析为纯文本
-│   │   │   ├── text_splitter.py              # 文档切块和重叠处理
-│   │   │   ├── embedding_client.py           # Embedding 客户端，支持真实 API 和本地演示向量
-│   │   │   ├── vector_store.py               # pgvector 存储、向量检索、chunk 返回
-│   │   │   ├── retriever.py                  # 根据用户问题检索相关文档片段
-│   │   │   ├── reranker.py                   # 检索结果重排和业务领域过滤
-│   │   │   └── prompt_builder.py             # 构造带引用来源的 RAG 回答 Prompt
-│   │   │
-│   │   ├── agents/                           # Agent 编排模块
-│   │   │   ├── __init__.py                   # agents 包标识
-│   │   │   ├── factory_office_agent.py       # Agent 总入口，优先使用 LangGraph，缺失时走本地降级流程
-│   │   │   ├── graph_state.py                # Agent 状态定义，包括用户输入、意图、检索结果、工具调用等
-│   │   │   ├── graph_nodes.py                # 意图识别、知识检索、流程草稿生成、审批判断等节点
-│   │   │   ├── graph_edges.py                # 根据意图和状态决定下一步流转
-│   │   │   └── prompts.py                    # 制造业 Agent 系统提示词和任务提示词
-│   │   │
-│   │   ├── workflows/                        # 固定办公流程模块
-│   │   │   ├── __init__.py                   # workflows 包标识
-│   │   │   ├── meeting_to_tasks.py           # 会议纪要转任务草稿
-│   │   │   ├── maintenance_ticket.py         # 设备异常转维修工单草稿
-│   │   │   ├── quality_issue.py              # 质量异常转 NCR/质量异常工单草稿
-│   │   │   ├── purchase_request.py           # 采购需求转采购申请草稿，并提示缺失字段
-│   │   │   └── weekly_report.py              # 项目记录转周报草稿
-│   │   │
-│   │   ├── tools/                            # Agent 可调用工具层
-│   │   │   ├── __init__.py                   # tools 包标识
-│   │   │   ├── base.py                       # 工具统一结构，定义工具名称、参数、结果格式
-│   │   │   ├── knowledge_tools.py            # 知识库搜索工具
-│   │   │   ├── task_tools.py                 # 创建任务、查询任务工具
-│   │   │   ├── ticket_tools.py               # 创建维修/质量工单、查询工单工具
-│   │   │   ├── purchase_tools.py             # 创建采购申请、查询采购申请工具
-│   │   │   ├── approval_tools.py             # 创建审批记录、审批状态处理工具
-│   │   │   └── notification_tools.py         # 通知/邮件草稿生成工具，当前不真实发送
-│   │   │
-│   │   ├── evaluators/                       # RAG 和工作流评测模块
-│   │   │   ├── rag_eval.py                   # 知识库问答评测，检查答案和引用来源质量
-│   │   │   ├── workflow_eval.py              # 工作流输出评测，检查字段完整性和流程合理性
-│   │   │   └── test_cases.py                 # 评测用例集合
-│   │   │
-│   │   └── utils/                            # 后端通用工具函数
-│   │       ├── __init__.py                   # utils 包标识
-│   │       ├── file_utils.py                 # 文件名清洗、扩展名判断、哈希计算、上传安全校验
-│   │       ├── time_utils.py                 # 时间格式化、当前时间、日期处理
-│   │       ├── json_utils.py                 # JSON 安全解析、序列化、字段提取
-│   │       └── id_utils.py                   # 业务 ID 和追踪 ID 生成
-│   │
-│   ├── alembic/                              # 数据库迁移目录
-│   │   ├── README                            # Alembic 目录说明
-│   │   ├── env.py                            # Alembic 运行环境，加载模型和数据库配置
-│   │   ├── script.py.mako                    # Alembic 迁移脚本模板
-│   │   └── versions/                         # 具体迁移版本
-│   │       └── 20260502_0001_initial_schema.py # 初始化数据库表、pgvector 扩展和索引
-│   │
-│   ├── tests/                                # 后端测试
-│   │   ├── test_health.py                    # 健康检查测试
-│   │   ├── test_document_upload.py           # 文档上传、解析、软删除相关测试
-│   │   ├── test_rag_search.py                # 知识库检索测试
-│   │   ├── test_knowledge_ask.py             # 知识库问答和引用来源测试
-│   │   ├── test_workflows.py                 # 会议、维修、采购、周报工作流测试
-│   │   ├── test_quality_issue_workflow.py    # 质量异常工作流测试
-│   │   ├── test_approvals.py                 # 审批创建、批准、拒绝和执行动作测试
-│   │   ├── test_agent_routes.py              # Agent 意图识别和路由测试
-│   │   ├── test_security.py                  # 权限角色和接口访问边界测试
-│   │   ├── test_seed_demo_data.py            # 种子数据导入测试
-│   │   └── test_ingest_demo_docs.py          # 演示文档解析、切块、导入测试
-│   │
-│   ├── data/                                 # 后端运行期数据目录，主要用于容器内文件路径兼容
-│   ├── requirements.txt                      # 后端运行依赖
-│   ├── requirements-dev.txt                  # 后端开发和测试依赖
-│   ├── Dockerfile                            # 后端 Docker 镜像构建文件
-│   ├── .dockerignore                         # 后端 Docker 构建忽略规则
-│   └── alembic.ini                           # Alembic 配置文件
-│
-├── frontend/                                 # Vue3 + Element Plus 前端
-│   ├── src/                                  # 前端源码
-│   │   ├── main.ts                           # Vue 应用入口，挂载 App、路由和 Element Plus
-│   │   ├── App.vue                           # 根组件，定义整体布局入口
-│   │   ├── env.d.ts                          # TypeScript 环境类型声明
-│   │   │
-│   │   ├── router/                           # 前端路由
-│   │   │   └── index.ts                      # 页面路由配置
-│   │   │
-│   │   ├── api/                              # 前端接口请求封装
-│   │   │   ├── http.ts                       # Axios 实例、baseURL、错误处理
-│   │   │   ├── documents.ts                  # 文档上传、列表、切块、删除申请接口
-│   │   │   ├── knowledge.ts                  # 知识库搜索和问答接口
-│   │   │   ├── agent.ts                      # 通用 Agent 对话接口
-│   │   │   ├── workflows.ts                  # 会议、维修、质量、采购、周报工作流接口
-│   │   │   ├── tasks.ts                      # 任务列表、详情、创建接口
-│   │   │   ├── tickets.ts                    # 工单列表、详情、创建接口
-│   │   │   ├── purchases.ts                  # 采购申请列表、详情、创建接口
-│   │   │   ├── approvals.ts                  # 审批列表、批准、拒绝接口
-│   │   │   └── auditLogs.ts                  # 审计日志列表和详情接口
-│   │   │
-│   │   └── views/                            # 前端页面
-│   │       ├── DashboardView.vue             # 首页仪表盘，展示文档、任务、工单、审批、日志概览
-│   │       ├── KnowledgeBaseView.vue         # 知识库页面，支持文档上传、文档列表、知识库问答、引用来源展示
-│   │       ├── AgentChatView.vue             # AI 助手页面，统一入口处理知识问答和业务流程意图
-│   │       ├── WorkflowsView.vue             # 办公流程页面，提供会议、维修、质量、采购、周报输入区
-│   │       ├── TasksView.vue                 # 任务页面，展示任务列表和任务详情
-│   │       ├── TicketsView.vue               # 工单页面，展示设备维修和质量异常工单
-│   │       ├── PurchasesView.vue             # 采购申请页面，展示采购申请状态和详情
-│   │       ├── ApprovalsView.vue             # 审批页面，支持批准和拒绝待执行动作
-│   │       └── AuditLogsView.vue             # 审计日志页面，展示工具调用参数和执行结果
-│   │
-│   ├── public/                               # 前端静态资源目录
-│   │   └── .gitkeep                          # 保留空目录
-│   │
-│   ├── index.html                            # Vite HTML 入口
-│   ├── package.json                          # 前端依赖和 npm 脚本
-│   ├── package-lock.json                     # 前端依赖锁定文件，保证安装版本一致
-│   ├── vite.config.ts                        # Vite 配置、开发服务器端口和代理
-│   ├── tsconfig.json                         # TypeScript 配置
-│   ├── Dockerfile                            # 前端 Docker 镜像构建文件
-│   └── .dockerignore                         # 前端 Docker 构建忽略规则
-│
-├── data/                                     # 演示数据与上传目录
-│   ├── demo_docs/                            # 制造业模拟知识库文档
-│   │   ├── .gitkeep                          # 保留目录
-│   │   ├── 采购管理制度.md                   # 采购流程、金额阈值、审批规则演示文档
-│   │   ├── 差旅报销制度.md                   # 差旅申请、费用标准、票据和报销审批演示文档
-│   │   ├── 设备维修手册_空压机.md            # 空压机报警、排查、维修建议演示文档
-│   │   ├── 质量异常处理流程.md               # 质量异常、隔离、复检、NCR 流程演示文档
-│   │   ├── 安全生产规范.md                   # 安全作业、风险审批、现场规范演示文档
-│   │   └── 项目周报模板.md                   # 周报结构、风险项、下周计划演示模板
-│   │
-│   ├── seed/                                 # 初始化业务数据
-│   │   ├── users.json                        # 演示用户、角色、部门数据
-│   │   ├── tasks.json                        # 演示任务数据
-│   │   ├── tickets.json                      # 演示设备维修和质量异常工单数据
-│   │   ├── purchase_requests.json            # 演示采购申请数据
-│   │   ├── approvals.json                    # 演示待审批和已审批记录
-│   │   └── audit_logs.json                   # 演示审计日志记录
-│   │
-│   └── uploads/                              # 本地上传文件目录
-│       └── .gitkeep                          # 保留上传目录，不提交真实上传文件
-│
-├── docs/                                     # 普通项目文档
-│   ├── architecture.md                       # 系统架构、模块关系和部署结构说明
-│   ├── api.md                                # 后端 API 说明
-│   ├── database.md                           # 数据库表设计和实体关系说明
-│   ├── rag_design.md                         # RAG 文档解析、切块、向量化、检索和引用设计
-│   ├── workflow_design.md                    # 办公流程设计，说明会议、维修、质量、采购、周报流程
-│   ├── agent_design.md                       # Agent 状态、节点、边、意图识别和工具调用说明
-│   ├── demo_script.md                        # 本地演示流程脚本
-│   └── roadmap.md                            # 后续规划和生产化增强方向
-│
-├── scripts/                                  # 项目辅助脚本
-│   ├── seed_demo_data.py                     # 导入 data/seed/*.json 到数据库
-│   └── ingest_demo_docs.py                   # 批量导入 data/demo_docs 文档，解析、切块、向量化、入库
-│
-├── .env.example                              # 环境变量模板，不包含真实密钥
-├── .gitignore                                # Git 忽略规则，排除 env、缓存、上传文件、依赖目录等
-├── docker-compose.yml                        # 一键启动 PostgreSQL/pgvector、后端、前端
-├── README.md                                 # GitHub 首页说明，介绍项目价值、功能、启动方式、结构和边界
-├── SUPERVISOR_COMPATIBILITY.md               # 面向业务负责人和管理层的说明，解释项目价值、适用范围和风险边界
-└── LICENSE                                   # 权利保留声明，未经作者书面许可不得复制、修改、分发、商用或部署
-
-
+├── 00_project_truth/
+├── SUPERVISOR_COMPATIBILITY.md
+├── backend/
+│   ├── alembic/
+│   │   └── versions/
+│   ├── app/
+│   │   ├── agents/
+│   │   ├── api/
+│   │   │   └── v1/
+│   │   │       └── endpoints/
+│   │   ├── core/
+│   │   ├── evaluators/
+│   │   ├── models/
+│   │   ├── rag/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   ├── tools/
+│   │   ├── utils/
+│   │   └── workflows/
+│   └── tests/
+├── data/
+│   ├── demo_docs/
+│   ├── seed/
+│   └── uploads/
+├── docs/
+├── frontend/
+│   ├── public/
+│   └── src/
+│       ├── api/
+│       ├── components/
+│       ├── router/
+│       ├── stores/
+│       ├── types/
+│       ├── utils/
+│       └── views/
+└── scripts/
 ```
+
+说明：
+
+- `.env` 是本地运行配置文件，不提交到代码仓库。
+- `.venv/`、`frontend/node_modules/`、`frontend/dist/`、`__pycache__/` 属于本地开发或构建产物，不属于项目源码结构。
+- `00_project_truth/` 是项目唯一真源目录，当前只保留 `PROJECT_SSOT.md`。
+- `SUPERVISOR_COMPATIBILITY.md` 位于项目根目录，用于面向业务和管理人员说明项目价值、使用场景和风险边界。
+
 ## 快速启动
 
 复制环境变量模板：

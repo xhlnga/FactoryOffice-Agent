@@ -65,13 +65,32 @@ function formatToolArgs(args: Record<string, unknown>) {
 
           <div v-if="message.result" class="result-box compact">
             <p>意图：{{ message.result.intent }}</p>
+            <p v-if="message.result.sop_name">SOP：{{ message.result.sop_name }}</p>
+            <p v-if="message.result.task_status">任务状态：{{ message.result.task_status }}</p>
             <p>是否需要审批：{{ message.result.requires_approval ? '是' : '否' }}</p>
+            <div v-if="message.result.missing_fields.length > 0">
+              <p>缺失字段：</p>
+              <ul>
+                <li v-for="field in message.result.missing_fields" :key="field.name">
+                  {{ field.label }}：{{ field.question }}
+                </li>
+              </ul>
+            </div>
             <ul v-if="message.result.tool_calls.length > 0">
               <li v-for="tool in message.result.tool_calls" :key="tool.tool_name">
                 {{ tool.tool_name }}，审批：{{ tool.requires_approval ? '需要' : '不需要' }}
                 <pre class="json-pre">{{ formatToolArgs(tool.tool_args) }}</pre>
               </li>
             </ul>
+            <details v-if="message.result.trace.length > 0">
+              <summary>Agent Trace</summary>
+              <ol>
+                <li v-for="trace in message.result.trace" :key="`${trace.step}-${trace.status}`">
+                  {{ trace.step }}：{{ trace.status }}
+                  <pre class="json-pre">{{ formatToolArgs(trace.detail) }}</pre>
+                </li>
+              </ol>
+            </details>
           </div>
         </article>
         <p v-if="messages.length === 0" class="empty-cell">暂无对话记录。</p>

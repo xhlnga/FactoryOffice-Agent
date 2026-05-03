@@ -40,8 +40,29 @@ class AgentRoutesTest(unittest.TestCase):
         state = run_factory_office_agent("帮我申请采购20个温度传感器，用于产线设备改造。")
 
         self.assertEqual(state["intent"], "purchase_request")
+        self.assertEqual(state["sop_id"], "purchase_request")
+        self.assertEqual(state["task_status"], "collecting_info")
         self.assertFalse(state["requires_approval"])
         self.assertIn("预算", state["tool_calls"][0]["reason"])
+        self.assertTrue(any(field["label"] == "预算" for field in state["missing_fields"]))
+        self.assertTrue(any(step["step"] == "slot_filling" for step in state["trace_steps"]))
+
+    def test_purchase_context_can_continue_slot_filling(self) -> None:
+        """补充信息可以沿用上一轮采购任务上下文。"""
+        state = run_factory_office_agent(
+            "预算48000元，供应商为华南传感器。",
+            context={
+                "task_status": "collecting_info",
+                "active_intent": "purchase_request",
+                "active_message": "帮我申请采购20个温度传感器，用于产线设备改造。",
+            },
+        )
+
+        self.assertEqual(state["intent"], "purchase_request")
+        self.assertEqual(state["task_status"], "waiting_approval")
+        self.assertTrue(state["requires_approval"])
+        self.assertEqual(state["missing_fields"], [])
+        self.assertIn("补充信息", state["effective_message"])
 
     def test_purchase_action_with_need_keyword_is_not_misclassified_as_knowledge(self) -> None:
         """“需要采购”是业务动作，不是制度问答。"""

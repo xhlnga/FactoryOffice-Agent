@@ -1,5 +1,7 @@
 from typing import Any, Literal, TypedDict
 
+from app.agents.task_state import AgentTaskStatus
+
 
 AgentIntent = Literal[
     "knowledge_qa",
@@ -41,6 +43,22 @@ class AuditEvent(TypedDict, total=False):
     detail: dict[str, Any]
 
 
+class MissingField(TypedDict, total=False):
+    """SOP 缺失字段。"""
+
+    name: str
+    label: str
+    question: str
+
+
+class TraceStep(TypedDict, total=False):
+    """Agent 可解释执行轨迹。"""
+
+    step: str
+    status: str
+    detail: dict[str, Any]
+
+
 class FactoryAgentState(TypedDict, total=False):
     """FactoryOffice-Agent 图状态。
 
@@ -49,12 +67,21 @@ class FactoryAgentState(TypedDict, total=False):
 
     user_id: int | None
     db: Any | None
+    context: dict[str, Any]
     message: str
+    effective_message: str
     intent: AgentIntent
+    sop_id: str | None
+    sop_name: str | None
+    task_status: AgentTaskStatus
+    slot_values: dict[str, Any]
+    missing_fields: list[MissingField]
+    next_question: str | None
     answer: str
     retrieved_chunks: list[RetrievedChunk]
     tool_calls: list[ToolCallDraft]
     requires_approval: bool
     approval_payload: dict[str, Any]
+    trace_steps: list[TraceStep]
     audit_events: list[AuditEvent]
     error: str | None

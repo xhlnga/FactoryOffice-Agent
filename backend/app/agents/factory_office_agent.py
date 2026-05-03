@@ -30,16 +30,26 @@ class FactoryOfficeAgent:
     def __init__(self) -> None:
         self._graph = build_langgraph_or_none()
 
-    def run(self, message: str, *, user_id: int | None = None, db: Any | None = None) -> FactoryAgentState:
+    def run(
+        self,
+        message: str,
+        *,
+        user_id: int | None = None,
+        db: Any | None = None,
+        context: dict[str, Any] | None = None,
+    ) -> FactoryAgentState:
         """执行一次 Agent 流程。"""
         initial_state: FactoryAgentState = {
             "user_id": user_id,
             "db": db,
+            "context": context or {},
             "message": message,
+            "effective_message": message,
             "retrieved_chunks": [],
             "tool_calls": [],
             "requires_approval": False,
             "approval_payload": {},
+            "trace_steps": [],
             "audit_events": [],
             "error": None,
         }
@@ -123,6 +133,7 @@ def run_factory_office_agent(
     *,
     user_id: int | None = None,
     db: Any | None = None,
+    context: dict[str, Any] | None = None,
 ) -> FactoryAgentState:
     """便捷函数：执行 FactoryOffice-Agent。"""
-    return FactoryOfficeAgent().run(message, user_id=user_id, db=db)
+    return FactoryOfficeAgent().run(message, user_id=user_id, db=db, context=context)
