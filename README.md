@@ -271,46 +271,6 @@ audit_logs.json
 
 ## 系统结构
 
-```mermaid
-flowchart TB
-  classDef blue fill:#ffffff,stroke:#2F80ED,color:#2F80ED,stroke-width:2px;
-  classDef group fill:#ffffff,stroke:#2F80ED,color:#2F80ED,stroke-width:2px;
-
-  subgraph L1[访问与接口层]
-    U[用户 / 业务人员<br/>提问、上传文件<br/>输入业务描述] --> F[Vue3 前端<br/>Element Plus 页面<br/>知识库 / 流程 / 审批]
-    F --> A[FastAPI API 层<br/>auth / documents / knowledge / agent<br/>workflows / tasks / tickets / purchases]
-  end
-
-  subgraph L2[Agent 与业务编排层]
-    R1[意图识别与路由<br/>LangGraph / 本地降级执行器<br/>判断问答、流程或审批动作] --> R2[知识库问答与流程草稿<br/>RAG 检索 + 引用来源<br/>会议、工单、质量、采购、周报]
-    R2 --> R3[回答生成与风险控制<br/>生成回答或业务草稿<br/>高风险动作进入审批]
-  end
-
-  subgraph L3[治理与执行层]
-    G1[人工审批门<br/>pending / approve / reject<br/>正式写入前由人确认] --> G2[Services + Tools<br/>任务 / 工单 / 采购写入<br/>审批后正式执行]
-    G2 --> G3[审计追踪<br/>用户输入、工具参数<br/>审批状态、执行结果]
-  end
-
-  subgraph L4[数据与外部接口层]
-    D1[PostgreSQL + pgvector<br/>业务表 + 文档向量]
-    D2[本地文件<br/>uploads / 文档原件]
-    D3[演示数据<br/>demo_docs / seed]
-    D4[OpenAI-compatible API<br/>LLM / Embedding]
-  end
-
-  A --> R1
-  R3 --> G1
-  G3 --> D1
-  G3 --> D2
-  R2 --> D4
-  D3 --> D1
-
-  class U,F,A,R1,R2,R3,G1,G2,G3,D1,D2,D3,D4 blue;
-  class L1,L2,L3,L4 group;
-```
-
-```text
-
 FactoryOffice-Agent/
 ├── 00_project_truth/                         # 项目事实中心
 │   └── PROJECT_SSOT.md                       # 项目唯一真源，定义项目名称、定位、范围、边界、技术栈、工作流和不做什么
