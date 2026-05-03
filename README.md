@@ -281,7 +281,7 @@ audit_logs.json
 
 FactoryOffice-Agent/
 ├── 00_project_truth/                         # 项目事实中心
-│   └── PROJECT_SSOT.md                       # 项目唯一真源，定义项目名称、定位、范围、边界、技术栈、工作流和不做什么
+│   └── PROJECT_SSOT.md                       # 项目唯一真源，定义项目名称、定位、范围、边界、技术栈、工作流
 │
 ├── backend/                                  # FastAPI 后端服务
 │   ├── app/                                  # 后端主应用代码
