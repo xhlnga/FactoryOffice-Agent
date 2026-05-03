@@ -272,10 +272,6 @@ audit_logs.json
 ## 系统结构
 
 
-<img width="1400" height="920" alt="image" src="https://github.com/user-attachments/assets/9a250590-5c16-4989-a0fb-f848de5d840a" />
-
-
-
 ```
 
 FactoryOffice-Agent/
