@@ -56,4 +56,7 @@ class BM25Index:
     @staticmethod
     def _tokenize(text: str) -> list[str]:
         tokens = jieba.lcut(text.lower())
-        return [t.strip() for t in tokens if t.strip()]
+        tokens = [t.strip() for t in tokens if t.strip()]
+        if not tokens:
+            tokens = list(text.lower())
+        return tokens

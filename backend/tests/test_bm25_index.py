@@ -59,3 +59,7 @@ class TestBM25Index:
         assert len(index.search("空压机报警", top_k=3)) <= 1
         index.build(sample_chunks)
         assert any(r.chunk_id == 2 for r in index.search("空压机报警", top_k=3))
+
+    def test_tokenize_fallback_to_chars(self):
+        tokens = BM25Index._tokenize("123!")
+        assert len(tokens) >= 1
