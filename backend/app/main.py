@@ -29,6 +29,17 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    @app.on_event("startup")
+    def _on_startup() -> None:
+        from app.core.database import SessionLocal
+        from app.rag.retriever import init_bm25_index
+        db = SessionLocal()
+        try:
+            init_bm25_index(db)
+        finally:
+            db.close()
+
     return app
 
 

@@ -164,5 +164,24 @@ def test_jieba_tokenize_handles_ascii():
     assert any("空压" in t or t == "空压机" for t in tokens)
 
 
+from app.rag.retriever import retrieve_relevant_chunks
+
+
+def test_retrieve_with_bm25_when_index_empty():
+    """BM25 索引为空时仍能返回向量路结果。"""
+    mock_db = Mock()
+    fake_vec_results = [
+        _chunk("采购金额超过50000元需要部门负责人和财务经理审批。", filename="采购管理制度.md"),
+        _chunk("空压机E07报警需要检查压力传感器接线。", filename="设备维修手册_空压机.md"),
+    ]
+    with patch("app.rag.retriever.embed_text", return_value=[0.1] * 1024):
+        with patch("app.rag.retriever.search_similar_chunks", return_value=fake_vec_results):
+            with patch("app.rag.retriever.get_bm25_index") as mock_bm25:
+                mock_bm25.return_value.search.return_value = []
+                results = retrieve_relevant_chunks(mock_db, query="采购超过5万怎么审批", top_k=5)
+    assert len(results) >= 1
+    assert any("采购" in r.chunk_text for r in results)
+
+
 if __name__ == "__main__":
     unittest.main()
