@@ -80,6 +80,7 @@ def ingest_one_document(db, path: Path, *, use_real_embedding: bool) -> tuple[Do
             filename=path.name,
             title=path.stem,
             category=infer_category(path.name),
+            doc_type=infer_doc_type(path.name),
             file_path=str(path),
             content_type=infer_content_type(path),
             file_size_bytes=path.stat().st_size,
@@ -92,6 +93,7 @@ def ingest_one_document(db, path: Path, *, use_real_embedding: bool) -> tuple[Do
         document.filename = path.name
         document.title = path.stem
         document.category = infer_category(path.name)
+        document.doc_type = infer_doc_type(path.name)
         document.file_path = str(path)
         document.content_type = infer_content_type(path)
         document.file_size_bytes = path.stat().st_size
@@ -103,6 +105,7 @@ def ingest_one_document(db, path: Path, *, use_real_embedding: bool) -> tuple[Do
     text = load_document_text(path)
     chunks = split_text(
         text,
+        doc_type=document.doc_type,
         metadata={
             "filename": path.name,
             "document_title": path.stem,
@@ -157,6 +160,21 @@ def infer_content_type(path: Path) -> str:
     if suffix == ".docx":
         return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     return "application/octet-stream"
+
+
+def infer_doc_type(filename: str) -> str:
+    mapping = {
+        "采购": "policy",
+        "差旅": "policy",
+        "安全": "policy",
+        "设备维修": "manual",
+        "质量": "policy",
+        "周报": "general",
+    }
+    for keyword, doc_type in mapping.items():
+        if keyword in filename:
+            return doc_type
+    return "general"
 
 
 if __name__ == "__main__":
