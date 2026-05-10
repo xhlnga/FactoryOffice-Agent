@@ -4,6 +4,46 @@ from typing import Any
 
 
 @dataclass(slots=True)
+class SplitterConfig:
+    chunk_size: int
+    overlap: int
+    heading_pattern: re.Pattern = field(repr=False)
+    table_pattern: re.Pattern = field(repr=False)
+
+
+POLICY_CONFIG = SplitterConfig(
+    chunk_size=900,
+    overlap=100,
+    heading_pattern=re.compile(r"^#{1,6}\s"),
+    table_pattern=re.compile(r"^\|.*\|"),
+)
+
+MANUAL_CONFIG = SplitterConfig(
+    chunk_size=500,
+    overlap=60,
+    heading_pattern=re.compile(r"^#{1,6}\s"),
+    table_pattern=re.compile(r"^\|.*\|"),
+)
+
+GENERAL_CONFIG = SplitterConfig(
+    chunk_size=800,
+    overlap=120,
+    heading_pattern=re.compile(r"^#{1,6}\s"),
+    table_pattern=re.compile(r"^\|.*\|"),
+)
+
+_CONFIG_REGISTRY = {
+    "policy": POLICY_CONFIG,
+    "manual": MANUAL_CONFIG,
+    "general": GENERAL_CONFIG,
+}
+
+
+def get_config(doc_type: str) -> SplitterConfig:
+    return _CONFIG_REGISTRY.get(doc_type, GENERAL_CONFIG)
+
+
+@dataclass(slots=True)
 class TextChunk:
     """文档切块结果。"""
 
