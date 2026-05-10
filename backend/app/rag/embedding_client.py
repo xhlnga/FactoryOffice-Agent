@@ -82,3 +82,57 @@ def _is_real_config(base_url: str, api_key: str) -> bool:
         return False
     placeholders = {"your_api_key_here", "your_embedding_key_here", "changeme", "placeholder"}
     return api_key.strip().lower() not in placeholders
+
+
+_embedding_client: EmbeddingClient | None = None
+
+
+def get_embedding_client() -> EmbeddingClient:
+    global _embedding_client
+    if _embedding_client is not None:
+        return _embedding_client
+
+    provider = settings.embedding_provider
+
+    if provider == "local":
+        _embedding_client = LocalBGEClient(
+            settings.embedding_local_model, device=settings.embedding_device
+        )
+    elif provider == "openai" or (provider == "auto" and _is_real_config(
+        settings.embedding_base_url, settings.embedding_api_key
+    )):
+        _embedding_client = OpenAIEmbeddingClient()
+    else:
+        _embedding_client = LocalBGEClient(
+            settings.embedding_local_model,
+            device=settings.embedding_device,
+        )
+
+    return _embedding_client
+
+
+def has_real_embedding_config() -> bool:
+    client = get_embedding_client()
+    return not isinstance(client, DemoEmbeddingClient)
+
+
+def embed_text(text: str) -> list[float]:
+    return get_embedding_client().embed(text)
+
+
+def embed_texts(texts: list[str]) -> list[list[float]]:
+    return get_embedding_client().embed_batch(texts)
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible aliases for existing test imports
+# ---------------------------------------------------------------------------
+
+def demo_embedding(text: str, dimensions: int = 1536) -> list[float]:
+    """Backward-compatible wrapper around the demo pseudo-vector logic.
+
+    Existing tests (test_rag_search, test_ingest_demo_docs) import this name
+    directly and expect the classic default dimension of 1536.
+    """
+    return _demo_embedding(text, dimensions)
+>>>>>>> 8447573 (feat: switch embedding fallback from Demo to LocalBGE on CPU)
