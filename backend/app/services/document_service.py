@@ -180,6 +180,7 @@ def index_document_for_knowledge_base(db: Session, document: Document) -> int:
     text = load_document_text(document.file_path)
     chunks = split_text(
         text,
+        doc_type=document.doc_type,
         metadata={
             "document_id": document.id,
             "filename": document.filename,

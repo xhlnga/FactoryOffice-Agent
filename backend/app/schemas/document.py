@@ -22,6 +22,7 @@ class DocumentCreate(DocumentBase):
     file_size_bytes: int | None = Field(default=None, ge=0, description="文件大小，单位字节")
     file_sha256: str | None = Field(default=None, min_length=64, max_length=64, description="文件 SHA-256")
     uploaded_by: int | None = Field(default=None, description="上传人 ID")
+    doc_type: str = Field(default="general", max_length=32, description="文档结构类型：policy / manual / general")
 
 
 class DocumentRead(DocumentBase, ORMModel):
