@@ -89,28 +89,24 @@ def split_text(
                 current = candidate
             else:
                 if current:
-                    chunks.append(TextChunk(text=current, index=len(chunks), metadata=dict(base_metadata)))
+                    chunks.append(TextChunk(text=current, index=len(chunks), metadata={**base_metadata, "chunk_size": len(current)}))
                 result = _maybe_table_block(segment, config)
                 if isinstance(result, list):
                     for chunk_text in result:
-                        chunks.append(TextChunk(text=chunk_text, index=len(chunks), metadata=dict(base_metadata)))
+                        chunks.append(TextChunk(text=chunk_text, index=len(chunks), metadata={**base_metadata, "chunk_size": len(chunk_text)}))
                     current = ""
                 else:
                     current = result
         else:
             if current:
-                chunks.append(TextChunk(text=current, index=len(chunks), metadata=dict(base_metadata)))
+                chunks.append(TextChunk(text=current, index=len(chunks), metadata={**base_metadata, "chunk_size": len(current)}))
                 current = ""
             sub_chunks = _split_long_segment(segment, config)
             for sub in sub_chunks:
-                chunks.append(TextChunk(text=sub, index=len(chunks), metadata=dict(base_metadata)))
+                chunks.append(TextChunk(text=sub, index=len(chunks), metadata={**base_metadata, "chunk_size": len(sub)}))
 
     if current:
-        if isinstance(current, list):
-            for chunk_text in current:
-                chunks.append(TextChunk(text=chunk_text, index=len(chunks), metadata=dict(base_metadata)))
-        else:
-            chunks.append(TextChunk(text=current, index=len(chunks), metadata=dict(base_metadata)))
+        chunks.append(TextChunk(text=current, index=len(chunks), metadata={**base_metadata, "chunk_size": len(current)}))
 
     return chunks
 
