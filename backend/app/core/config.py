@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     upload_max_size_mb: int = Field(default=50, ge=1, le=500, alias="UPLOAD_MAX_SIZE_MB")
     upload_chunk_size_bytes: int = Field(default=1024 * 1024, ge=64 * 1024, alias="UPLOAD_CHUNK_SIZE_BYTES")
 
+    storage_backend: str = Field(default="local", alias="STORAGE_BACKEND")
+    s3_endpoint: str = Field(default="", alias="S3_ENDPOINT")
+    s3_bucket: str = Field(default="factory-documents", alias="S3_BUCKET")
+    s3_access_key: str = Field(default="", alias="S3_ACCESS_KEY")
+    s3_secret_key: str = Field(default="", alias="S3_SECRET_KEY")
+    s3_use_ssl: bool = Field(default=True, alias="S3_USE_SSL")
+
+    wecom_webhook_url: str = Field(default="", alias="WECOM_WEBHOOK_URL")
+    dingtalk_webhook_url: str = Field(default="", alias="DINGTALK_WEBHOOK_URL")
+    integration_enabled: bool = Field(default=False, alias="INTEGRATION_ENABLED")
+    integration_platform: str = Field(default="wecom", alias="INTEGRATION_PLATFORM")
     @property
     def is_development(self) -> bool:
         """判断当前是否为本地开发环境。"""
