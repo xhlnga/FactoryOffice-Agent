@@ -1,0 +1,72 @@
+[
+  {
+    "query_id": "q001",
+    "query": "采购超过5万需要谁审批",
+    "query_type": "规范",
+    "domain": "purchase",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q002",
+    "query": "那个买大东西的要找哪个领导签",
+    "query_type": "混乱",
+    "domain": "purchase",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q003",
+    "query": "空压机E07报警怎么处理",
+    "query_type": "规范",
+    "domain": "maintenance",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q004",
+    "query": "那个转的机器坏了屏幕闪红灯咋办",
+    "query_type": "混乱",
+    "domain": "maintenance",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q005",
+    "query": "差旅报销要提交什么材料",
+    "query_type": "规范",
+    "domain": "reimbursement",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q006",
+    "query": "出去跑业务花的钱怎么要回来",
+    "query_type": "混乱",
+    "domain": "reimbursement",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q007",
+    "query": "质量异常怎么处理",
+    "query_type": "规范",
+    "domain": "quality",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q008",
+    "query": "做出来的东西有问题找谁",
+    "query_type": "混乱",
+    "domain": "quality",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q009",
+    "query": "安全生产规范有哪些要求",
+    "query_type": "规范",
+    "domain": "safety",
+    "relevant_chunk_ids": []
+  },
+  {
+    "query_id": "q010",
+    "query": "干活的时候要注意啥别出事",
+    "query_type": "混乱",
+    "domain": "safety",
+    "relevant_chunk_ids": []
+  }
+]
