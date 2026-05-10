@@ -45,9 +45,12 @@ def create_approval(db: Session, data: ApprovalCreateRequest) -> Approval:
     db.add(approval)
     db.commit()
     db.refresh(approval)
+    role_hint = ""
+    if chain_template and chain_template.steps:
+        role_hint = f"【待{chain_template.steps[0].step_name}】"
     notify(IntegrationMessage(
         title=f"新审批提交 — {data.action_type}",
-        content=f"审批 #{approval.id} 已提交，当前待第 1 级审批。",
+        content=f"审批 #{approval.id} 已提交，当前待第 1 级审批。{role_hint}",
     ))
     return approval
 
@@ -112,9 +115,13 @@ def approve_approval(db: Session, approval_id: int, data: ApprovalDecisionReques
         approval.current_level += 1
         db.commit()
         db.refresh(approval)
+        role_hint = ""
+        if template and template.steps and approval.current_level <= len(template.steps):
+            step = template.steps[approval.current_level - 1]
+            role_hint = f"【待{step.step_name}】"
         notify(IntegrationMessage(
             title=f"审批推进 — 第 {approval.current_level}/{total_levels} 级",
-            content=f"审批 #{approval_id} 已进入第 {approval.current_level}/{total_levels} 级审批。",
+            content=f"审批 #{approval_id} 已进入第 {approval.current_level}/{total_levels} 级审批。{role_hint}",
         ))
         return approval
 
@@ -154,7 +161,7 @@ def approve_approval(db: Session, approval_id: int, data: ApprovalDecisionReques
     db.refresh(approval)
     notify(IntegrationMessage(
         title=f"审批通过 — {approval.action_type}",
-        content=f"审批 #{approval_id} 已全部通过，业务动作已执行。",
+        content=f"审批 #{approval_id} 已全部通过（共{total_levels or '?'}级），业务动作已执行。",
     ))
     return approval
 
@@ -173,7 +180,10 @@ def reject_approval(db: Session, approval_id: int, data: ApprovalDecisionRequest
     db.refresh(approval)
     notify(IntegrationMessage(
         title=f"审批拒绝 — {approval.action_type}",
-        content=f"审批 #{approval_id} 已被 {data.reviewer} 拒绝。原因：{data.comment or '无'}",
+        content=(
+            f"审批 #{approval_id} 已在第 {approval.current_level} 级被 {data.reviewer} 拒绝。\n"
+            f"原因：{data.comment or '无'}"
+        ),
     ))
     return approval
 

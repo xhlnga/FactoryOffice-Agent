@@ -33,6 +33,9 @@ class TestNotificationOnApproval:
             mock_adapter.send.assert_called()
             message = mock_adapter.send.call_args[0][0]
             assert "审批" in message.title
+            assert "create_purchase_request" in message.title
+            assert "第 1 级" in message.content
+            assert "部门负责人审批" in message.content
 
     def test_approve_triggers_notification(self, db_session):
         mock_adapter = mock.MagicMock()
@@ -67,6 +70,8 @@ class TestNotificationOnApproval:
             mock_adapter.send.assert_called()
             message = mock_adapter.send.call_args[0][0]
             assert "审批" in message.title
+            assert "已全部通过" in message.content
+            assert "create_maintenance_ticket" in message.title
 
     def test_reject_triggers_notification(self, db_session):
         mock_adapter = mock.MagicMock()
@@ -96,6 +101,9 @@ class TestNotificationOnApproval:
             mock_adapter.send.assert_called()
             message = mock_adapter.send.call_args[0][0]
             assert "审批" in message.title
+            assert "manager_zhang" in message.content
+            assert "预算不足" in message.content
+            assert "第 1 级" in message.content
 
     def test_integration_disabled_skips_notification(self, db_session):
         with mock.patch(
@@ -149,3 +157,5 @@ class TestNotificationOnSLA:
             mock_adapter.send.assert_called()
             message = mock_adapter.send.call_args[0][0]
             assert "SLA" in message.title
+            assert "超时工单" in message.content
+            assert "设备维修" in message.content
