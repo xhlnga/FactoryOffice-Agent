@@ -15,6 +15,7 @@ class Document(TimestampMixin, Base):
     filename: Mapped[str] = mapped_column(String(255), nullable=False, comment="原始文件名")
     title: Mapped[str] = mapped_column(String(255), nullable=False, comment="文档标题")
     category: Mapped[str] = mapped_column(String(64), default="未分类", nullable=False, comment="文档分类")
+    doc_type: Mapped[str] = mapped_column(String(32), default="general", server_default="'general'", comment="文档结构类型：policy / manual / general")
     file_path: Mapped[str | None] = mapped_column(String(512), comment="本地文件路径")
     content_type: Mapped[str | None] = mapped_column(String(128), comment="文件 MIME 类型")
     file_size_bytes: Mapped[int | None] = mapped_column(BigInteger, comment="文件大小，单位字节")
