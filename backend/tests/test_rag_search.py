@@ -141,5 +141,28 @@ def _chunk(text: str, *, filename: str) -> VectorSearchResult:
     )
 
 
+from app.rag.reranker import _tokenize
+
+
+def test_jieba_tokenize_splits_chinese_words():
+    tokens = _tokenize("采购超过5万需要谁审批")
+    assert "采购" in tokens
+    assert "审批" in tokens
+    assert len(tokens) > 2
+
+
+def test_jieba_tokenize_filters_stop_words():
+    tokens = _tokenize("那个买大东西需要怎么审批")
+    assert "那个" not in tokens
+    assert "怎么" not in tokens
+    assert "审批" in tokens
+
+
+def test_jieba_tokenize_handles_ascii():
+    tokens = _tokenize("空压机 E07 报警")
+    assert "e07" in tokens
+    assert any("空压" in t or t == "空压机" for t in tokens)
+
+
 if __name__ == "__main__":
     unittest.main()

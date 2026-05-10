@@ -53,12 +53,28 @@ def filter_by_keyword_overlap(
 
 
 def _tokenize(text: str) -> set[str]:
-    """提取简单关键词，兼容中文和英文数字。"""
+    """使用 jieba 分词，兼容中文和英文数字。"""
+    try:
+        import jieba
+    except ImportError:
+        return _tokenize_ngram_fallback(text)
+
     normalized = text.lower()
     ascii_terms = set(re.findall(r"[a-z0-9][a-z0-9_-]{1,}", normalized))
-    chinese_chars = re.findall(r"[\u4e00-\u9fff]", text)
-    chinese_terms: set[str] = set()
+    chinese_terms = set(jieba.cut(text, cut_all=False))
+    return {
+        term.strip()
+        for term in ascii_terms | chinese_terms
+        if term.strip() and term.strip() not in _STOP_TERMS
+    }
 
+
+def _tokenize_ngram_fallback(text: str) -> set[str]:
+    """n-gram 降级方案，当 jieba 不可用时使用。"""
+    normalized = text.lower()
+    ascii_terms = set(re.findall(r"[a-z0-9][a-z0-9_-]{1,}", normalized))
+    chinese_chars = re.findall(r"[一-鿿]", text)
+    chinese_terms: set[str] = set()
     for size in (2, 3, 4):
         if len(chinese_chars) < size:
             continue
@@ -66,7 +82,6 @@ def _tokenize(text: str) -> set[str]:
             "".join(chinese_chars[index:index + size])
             for index in range(len(chinese_chars) - size + 1)
         )
-
     return {
         term
         for term in ascii_terms | chinese_terms
@@ -117,22 +132,12 @@ def _result_matches_domain(result: VectorSearchResult, domain: str) -> bool:
 
 
 _STOP_TERMS = {
-    "今天",
-    "明天",
-    "后天",
-    "怎么",
-    "如何",
-    "是否",
-    "什么",
-    "多少",
-    "需要",
-    "可以",
-    "应该",
-    "一下",
-    "相关",
-    "当前",
-    "本周",
-    "下周",
+    "今天", "明天", "后天",
+    "怎么", "如何", "是否", "什么", "多少",
+    "需要", "可以", "应该", "必须",
+    "一下", "这个", "那个",
+    "相关", "当前", "本周", "下周",
+    "的", "了", "是", "在", "和", "与", "或",
 }
 
 
