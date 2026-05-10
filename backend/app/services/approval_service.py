@@ -1,6 +1,8 @@
 from datetime import date
 from typing import Any
 
+from app.integration import IntegrationMessage
+from app.services.notification_service import notify
 from fastapi import status
 from pydantic import ValidationError
 from sqlalchemy import func, select
@@ -43,6 +45,10 @@ def create_approval(db: Session, data: ApprovalCreateRequest) -> Approval:
     db.add(approval)
     db.commit()
     db.refresh(approval)
+    notify(IntegrationMessage(
+        title=f"新审批提交 — {data.action_type}",
+        content=f"审批 #{approval.id} 已提交，当前待第 1 级审批。",
+    ))
     return approval
 
 
@@ -98,6 +104,21 @@ def approve_approval(db: Session, approval_id: int, data: ApprovalDecisionReques
     approval.comment = data.comment
     approval.reviewed_at = utc_now()
 
+    # Check if chain has more levels
+    template = load_chain_template(db, approval.action_type) if approval.chain_template_id else None
+    total_levels = get_chain_total_levels(template)
+    if total_levels and approval.current_level < total_levels:
+        # Advance to next level, don't execute yet
+        approval.current_level += 1
+        db.commit()
+        db.refresh(approval)
+        notify(IntegrationMessage(
+            title=f"审批推进 — 第 {approval.current_level}/{total_levels} 级",
+            content=f"审批 #{approval_id} 已进入第 {approval.current_level}/{total_levels} 级审批。",
+        ))
+        return approval
+
+    # Final level — execute the action
     try:
         result = execute_approved_action(db, approval)
     except Exception as exc:
@@ -131,6 +152,10 @@ def approve_approval(db: Session, approval_id: int, data: ApprovalDecisionReques
     approval.execution_result = result
     db.commit()
     db.refresh(approval)
+    notify(IntegrationMessage(
+        title=f"审批通过 — {approval.action_type}",
+        content=f"审批 #{approval_id} 已全部通过，业务动作已执行。",
+    ))
     return approval
 
 
@@ -146,6 +171,10 @@ def reject_approval(db: Session, approval_id: int, data: ApprovalDecisionRequest
     approval.reviewed_at = utc_now()
     db.commit()
     db.refresh(approval)
+    notify(IntegrationMessage(
+        title=f"审批拒绝 — {approval.action_type}",
+        content=f"审批 #{approval_id} 已被 {data.reviewer} 拒绝。原因：{data.comment or '无'}",
+    ))
     return approval
 
 
