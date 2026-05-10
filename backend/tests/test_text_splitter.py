@@ -84,3 +84,24 @@ class TestSplitterConfig:
         assert config.table_pattern.search("| 设备类别 | 设备示例 |")
         assert config.table_pattern.search("|---|---|")
         assert not config.table_pattern.search("普通文本")
+
+
+class TestDemoDocsIntegration:
+    def test_all_demo_docs_split_with_all_types(self):
+        from pathlib import Path
+        from app.rag.document_loader import load_document_text
+        import pytest
+
+        demo_dir = Path(__file__).resolve().parents[2] / "data" / "demo_docs"
+        if not demo_dir.exists():
+            pytest.skip("demo_docs directory not found")
+
+        doc_types = ["policy", "manual", "general"]
+        for path in sorted(demo_dir.glob("*.md")):
+            text = load_document_text(path)
+            for dt in doc_types:
+                chunks = split_text(text, doc_type=dt)
+                assert len(chunks) >= 1, f"{path.name} with {dt} should produce chunks"
+                for chunk in chunks:
+                    assert chunk.metadata.get("doc_type") == dt
+                    assert len(chunk.text) > 0
