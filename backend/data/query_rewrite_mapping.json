@@ -1,0 +1,21 @@
+{
+  "replacements": [
+    {"colloquial": "买大东西", "term": "大额采购"},
+    {"colloquial": "买大件", "term": "大额采购"},
+    {"colloquial": "找哪个领导签", "term": "哪个层级审批"},
+    {"colloquial": "找谁签", "term": "谁审批"},
+    {"colloquial": "转的机器坏了", "term": "空压机故障"},
+    {"colloquial": "转的机器", "term": "空压机"},
+    {"colloquial": "屏幕闪红灯", "term": "故障报警指示灯亮"},
+    {"colloquial": "闪红灯", "term": "故障报警"},
+    {"colloquial": "报警咋办", "term": "报警怎么处理"},
+    {"colloquial": "跑业务花的钱", "term": "差旅费用"},
+    {"colloquial": "出去跑业务", "term": "出差"},
+    {"colloquial": "做出来的东西有问题", "term": "产品质量异常"},
+    {"colloquial": "东西有问题", "term": "产品质量异常"},
+    {"colloquial": "干活要注意啥别出事", "term": "安全生产操作要求"},
+    {"colloquial": "干活的时候", "term": "作业时"},
+    {"colloquial": "要提交什么材料", "term": "需要提交哪些材料"},
+    {"colloquial": "钱怎么要回来", "term": "费用如何报销"}
+  ]
+}

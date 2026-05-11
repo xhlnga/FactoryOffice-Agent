@@ -89,9 +89,10 @@ class AgentRoutesTest(unittest.TestCase):
         self.assertEqual(state["tool_calls"][0]["tool_name"], "generate_weekly_report")
 
     def test_unknown_input_stays_unknown(self) -> None:
-        intent = classify_intent("今天下午天气不错，大家辛苦了。")
+        intent, confidence = classify_intent("今天下午天气不错，大家辛苦了。")
 
         self.assertEqual(intent, "unknown")
+        self.assertEqual(confidence, 0.0)
 
     def test_agent_chat_writes_audit_log(self) -> None:
         """Agent 对话入口必须写审计日志，便于追溯意图、工具草稿和审批判断。"""

@@ -12,7 +12,10 @@ from app.services.llm_service import chat_completion
 
 def search_knowledge(db: Session, request: KnowledgeSearchRequest) -> KnowledgeSearchResponse:
     """知识库检索入口。"""
-    results = retrieve_relevant_chunks(db, query=request.query, top_k=request.top_k)
+    results = retrieve_relevant_chunks(
+        db, query=request.query, top_k=request.top_k,
+        bm25_query=request.bm25_query,
+    )
     return KnowledgeSearchResponse(
         query=request.query,
         top_k=request.top_k,

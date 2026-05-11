@@ -20,7 +20,11 @@ def classify_intent_node(state: FactoryAgentState) -> FactoryAgentState:
     message = state.get("message", "")
     context = state.get("context") or {}
     context_intent = _intent_from_context(context)
-    intent = context_intent or classify_intent(message)
+    if context_intent:
+        intent = context_intent
+        confidence = 1.0
+    else:
+        intent, confidence = classify_intent(message)
     effective_message = build_effective_message(message, context)
     sop = match_sop(intent)
     trace_steps = append_trace_step(
@@ -42,6 +46,7 @@ def classify_intent_node(state: FactoryAgentState) -> FactoryAgentState:
         state,
         {
             "intent": intent,
+            "intent_confidence": confidence,
             "effective_message": effective_message,
             "sop_id": sop.sop_id if sop else None,
             "sop_name": sop.name if sop else None,
@@ -51,6 +56,44 @@ def classify_intent_node(state: FactoryAgentState) -> FactoryAgentState:
                 action="classify_intent",
                 status="success",
                 detail={"intent": intent, "sop_id": sop.sop_id if sop else None},
+            ),
+        },
+    )
+
+
+def query_rewrite_node(state: FactoryAgentState) -> FactoryAgentState:
+    """查询改写节点。
+
+    在意图分类置信度不足或意图未知时，将用户口语化的查询
+    改写为更适合知识库检索的标准术语查询。
+    """
+    message = state.get("message", "")
+    effective = state.get("effective_message") or message
+
+    try:
+        from app.rag.query_rewriter import rewrite_query
+        rewritten = rewrite_query(effective)
+    except Exception:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception("Query rewrite failed, falling back to original message")
+        rewritten = effective
+
+    return _merge_state(
+        state,
+        {
+            "effective_message": rewritten,
+            "trace_steps": append_trace_step(
+                state.get("trace_steps", []),
+                step="query_rewrite",
+                status="success" if rewritten != effective else "unchanged",
+                detail={"original": effective, "rewritten": rewritten},
+            ),
+            "audit_events": _append_event(
+                state,
+                action="query_rewrite",
+                status="success",
+                detail={"original": effective[:100], "rewritten": rewritten[:100]},
             ),
         },
     )
@@ -264,8 +307,33 @@ def final_answer_node(state: FactoryAgentState) -> FactoryAgentState:
     )
 
 
-def classify_intent(message: str) -> AgentIntent:
-    """基于关键词识别办公场景。"""
+def classify_intent(message: str) -> tuple[AgentIntent, float]:
+    """混合意图识别：LLM 优先，关键词降级。
+
+    Returns (intent, confidence). Confidence is 1.0 for keyword fallback
+    (rules are deterministic), 0.0 for pure unknown.
+    """
+    try:
+        from app.services.llm_service import classify_intent_with_llm
+        result = classify_intent_with_llm(message)
+        intent = result.get("intent", "unknown")
+        confidence = result.get("confidence", 0.0)
+        valid_intents = {
+            "knowledge_qa", "meeting_to_tasks", "maintenance_ticket",
+            "quality_issue", "purchase_request", "weekly_report", "unknown",
+        }
+        if intent in valid_intents and confidence >= 0.7:
+            return intent, confidence
+    except Exception:
+        pass
+
+    keyword_intent = _keyword_classify_intent(message)
+    keyword_confidence = 1.0 if keyword_intent != "unknown" else 0.0
+    return keyword_intent, keyword_confidence
+
+
+def _keyword_classify_intent(message: str) -> AgentIntent:
+    """基于关键词识别办公场景（保留作为降级方案）。"""
     text = message.lower()
 
     if _looks_like_knowledge_question(text):

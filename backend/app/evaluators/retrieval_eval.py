@@ -6,8 +6,13 @@
 3. 编辑 data/eval_queries/query_annotations.json 填入 relevant_chunk_ids
 
 运行：
+  # 基线（不开改写）
   cd backend
-  python -m pytest app/evaluators/retrieval_eval.py -v -s
+  EMBEDDING_PROVIDER=local python -m pytest app/evaluators/retrieval_eval.py -v -s
+
+  # A/B 对比（开改写）
+  cd backend
+  EMBEDDING_PROVIDER=local python -m pytest app/evaluators/retrieval_eval.py -v -s --rewrite
 """
 
 import json
@@ -44,6 +49,11 @@ def mrr(retrieved_ids: list[int], relevant_ids: list[int]) -> float:
 
 
 class TestRetrievalEval:
+    """检索管线评估测试套件。
+
+    默认跑基线（不开 query 改写）。用 --rewrite 标志切换 A/B 模式。
+    """
+
     @pytest.fixture(scope="class")
     def db_session(self):
         db = SessionLocal()
@@ -51,22 +61,31 @@ class TestRetrievalEval:
         yield db
         db.close()
 
-    @pytest.mark.parametrize("query_entry", load_queries(), ids=lambda q: q["query_id"])
-    def test_query(self, db_session, query_entry):
+    @pytest.mark.parametrize("q_entry", load_queries(), ids=lambda q: q["query_id"])
+    def test_query(self, db_session, q_entry, request):
+        use_rewrite = request.config.getoption("--rewrite", default=False)
+
+        bm25_query = None
+        if use_rewrite:
+            from app.rag.query_rewriter import rewrite_query
+            bm25_query = rewrite_query(q_entry["query"])
+
         retrieved = retrieve_relevant_chunks(
             db_session,
-            query=query_entry["query"],
+            query=q_entry["query"],
             top_k=10,
+            bm25_query=bm25_query,
         )
         retrieved_ids = [r.chunk_id for r in retrieved]
-        relevant_ids = query_entry["relevant_chunk_ids"]
+        relevant_ids = q_entry["relevant_chunk_ids"]
 
         r5 = recall_at_k(retrieved_ids, relevant_ids, 5)
         r10 = recall_at_k(retrieved_ids, relevant_ids, 10)
         m = mrr(retrieved_ids, relevant_ids)
 
+        mode = "rewrite" if use_rewrite else "baseline"
         print(
-            f"\n{query_entry['query_id']} [{query_entry['query_type']}]: "
+            f"\n{q_entry['query_id']} [{q_entry['query_type']}] [{mode}]: "
             f"recall@5={r5:.2f} recall@10={r10:.2f} MRR={m:.2f} "
             f"retrieved_ids={retrieved_ids}"
         )

@@ -1,6 +1,21 @@
 from app.agents.graph_state import FactoryAgentState
 
 
+def route_after_classify(state: FactoryAgentState) -> str:
+    """意图分类后的路由：低置信度或未知意图进入查询改写，否则按意图路由。"""
+    intent = state.get("intent", "unknown")
+    confidence = state.get("intent_confidence", 0.0)
+
+    if confidence < 0.8 or intent == "unknown":
+        return "query_rewrite"
+    return route_after_intent(state)
+
+
+def route_after_rewrite(state: FactoryAgentState) -> str:
+    """查询改写后的路由：改写完成后按意图正常路由。"""
+    return route_after_intent(state)
+
+
 def route_after_intent(state: FactoryAgentState) -> str:
     """意图识别后的路由。"""
     intent = state.get("intent", "unknown")

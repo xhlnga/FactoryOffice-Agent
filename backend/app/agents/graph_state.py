@@ -71,6 +71,7 @@ class FactoryAgentState(TypedDict, total=False):
     message: str
     effective_message: str
     intent: AgentIntent
+    intent_confidence: float
     sop_id: str | None
     sop_name: str | None
     task_status: AgentTaskStatus

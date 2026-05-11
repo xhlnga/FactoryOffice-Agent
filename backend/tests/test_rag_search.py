@@ -122,6 +122,27 @@ class RagSearchTest(unittest.TestCase):
         self.assertIs(service_mock.call_args.args[0], db)
         self.assertTrue(result.success)
 
+    def test_retrieve_with_bm25_query_separate(self):
+        """bm25_query != query 时 BM25 路使用独立 query。"""
+        from unittest.mock import patch, MagicMock
+        from app.rag.retriever import retrieve_relevant_chunks
+
+        db = MagicMock()
+        with patch("app.rag.retriever.embed_text") as mock_embed, \
+             patch("app.rag.retriever.search_similar_chunks") as mock_vec, \
+             patch("app.rag.retriever.get_bm25_index") as mock_bm25_getter:
+            mock_embed.return_value = [0.1] * 1024
+            mock_vec.return_value = []
+            mock_bm25 = MagicMock()
+            mock_bm25.search.return_value = []
+            mock_bm25_getter.return_value = mock_bm25
+
+            retrieve_relevant_chunks(
+                db, query="机器闪红灯咋办", bm25_query="空压机故障报警怎么处理", top_k=5
+            )
+
+            mock_bm25.search.assert_called_once_with("空压机故障报警怎么处理", top_k=15)
+
 
 def _cosine(left: list[float], right: list[float]) -> float:
     """计算测试用余弦相似度。"""

@@ -3,14 +3,17 @@ from typing import Any
 
 from app.agents.graph_edges import (
     route_after_approval_gate,
+    route_after_classify,
     route_after_intent,
     route_after_retrieval,
+    route_after_rewrite,
     route_after_tool_selection,
 )
 from app.agents.graph_nodes import (
     approval_gate_node,
     classify_intent_node,
     final_answer_node,
+    query_rewrite_node,
     retrieve_knowledge_node,
     select_tools_node,
 )
@@ -68,6 +71,7 @@ def build_langgraph_or_none() -> Any | None:
 
     graph = StateGraph(FactoryAgentState)
     graph.add_node("classify_intent", classify_intent_node)
+    graph.add_node("query_rewrite", query_rewrite_node)
     graph.add_node("retrieve_knowledge", retrieve_knowledge_node)
     graph.add_node("select_tools", select_tools_node)
     graph.add_node("approval_gate", approval_gate_node)
@@ -76,7 +80,17 @@ def build_langgraph_or_none() -> Any | None:
     graph.set_entry_point("classify_intent")
     graph.add_conditional_edges(
         "classify_intent",
-        route_after_intent,
+        route_after_classify,
+        {
+            "query_rewrite": "query_rewrite",
+            "retrieve_knowledge": "retrieve_knowledge",
+            "select_tools": "select_tools",
+            "final_answer": "final_answer",
+        },
+    )
+    graph.add_conditional_edges(
+        "query_rewrite",
+        route_after_rewrite,
         {
             "retrieve_knowledge": "retrieve_knowledge",
             "select_tools": "select_tools",
@@ -108,7 +122,11 @@ def build_langgraph_or_none() -> Any | None:
 def run_fallback_graph(state: FactoryAgentState) -> FactoryAgentState:
     """未安装 LangGraph 时的降级执行流程。"""
     state = classify_intent_node(state)
-    next_node = route_after_intent(state)
+    next_node = route_after_classify(state)
+
+    if next_node == "query_rewrite":
+        state = query_rewrite_node(state)
+        next_node = route_after_rewrite(state)
 
     if next_node == "retrieve_knowledge":
         state = retrieve_knowledge_node(state)

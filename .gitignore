@@ -32,3 +32,6 @@ backend/data/uploads/*
 
 # Docker / 数据库本地残留
 postgres_data/
+# 测试数据库
+*.db
+backend/.env

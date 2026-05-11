@@ -29,16 +29,17 @@ def retrieve_relevant_chunks(
     *,
     query: str,
     top_k: int = 5,
+    bm25_query: str | None = None,
 ) -> list[VectorSearchResult]:
     query_embedding = embed_text(query)
     vector_results = search_similar_chunks(
         db, query_embedding=query_embedding, top_k=15
     )
-    bm25_results = get_bm25_index().search(query, top_k=15)
+    bm25_results = get_bm25_index().search(bm25_query or query, top_k=15)
     fused = fuse_results(
         vector_results,
         bm25_results,
         alpha=settings.fusion_alpha,
-        query=query,
+        query=bm25_query or query,
     )
     return fused[:top_k]

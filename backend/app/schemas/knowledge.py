@@ -6,6 +6,7 @@ class KnowledgeSearchRequest(BaseModel):
 
     query: str = Field(..., min_length=1, description="用户问题")
     top_k: int = Field(default=5, ge=1, le=20, description="返回片段数量")
+    bm25_query: str | None = Field(default=None, description="可选：BM25 关键词搜索用独立查询词")
 
 
 class Citation(BaseModel):

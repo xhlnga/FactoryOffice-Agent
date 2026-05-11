@@ -51,3 +51,27 @@ class TestFusion:
         bm25 = [_b(2, 9.0), _b(1, 3.0)]
         result = fuse_results(vec, bm25, alpha=1.0)
         assert result[0].chunk_id == 1
+
+    def test_fuse_results_passes_query_to_domain_detection(self):
+        from app.retrieval.fusion import fuse_results
+        from app.rag.vector_store import VectorSearchResult
+
+        vec = [
+            VectorSearchResult(chunk_id=1, chunk_text="大额采购需部门经理审批", score=0.85,
+                               document_id=1, document_title="采购制度", filename="p.md",
+                               chunk_index=0)
+        ]
+        fused = fuse_results(vec, [], alpha=0.5, query="采购超过5万需要谁审批")
+        assert len(fused) == 1
+
+    def test_fuse_results_with_empty_query(self):
+        from app.retrieval.fusion import fuse_results
+        from app.rag.vector_store import VectorSearchResult
+
+        vec = [
+            VectorSearchResult(chunk_id=1, chunk_text="text", score=0.5,
+                               document_id=1, document_title="", filename="f",
+                               chunk_index=0)
+        ]
+        fused = fuse_results(vec, [], alpha=0.5, query="")
+        assert len(fused) == 1
