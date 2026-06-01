@@ -350,243 +350,359 @@ audit_logs.json
 ```text
 FactoryOffice-Agent/
 ├── 00_project_truth/                         # 项目事实中心
-│   └── PROJECT_SSOT.md                       # 项目唯一真源，定义项目定位、功能边界、技术栈、工作流、风险约束和不做什么
+│   └── PROJECT_SSOT.md                       # 项目唯一真源，定义定位、范围、边界、技术栈、工作流和不做什么
 
 ├── backend/                                  # FastAPI 后端服务
 │   ├── app/                                  # 后端主应用代码
 │   │   ├── __init__.py                       # Python 包标识
-│   │   ├── main.py                           # FastAPI 入口，创建应用、挂载 API 路由、配置 CORS、注册异常处理
+│   │   ├── main.py                           # FastAPI 入口，创建 app、挂载路由、配置 CORS、自定义 Swagger 样式
 
 │   │   ├── api/                              # HTTP API 路由层
 │   │   │   ├── __init__.py                   # API 包标识
 │   │   │   └── v1/                           # API v1 版本目录
 │   │   │       ├── __init__.py               # v1 包标识
-│   │   │       ├── router.py                 # API v1 总路由，统一注册 health、documents、knowledge、agent、workflows 等接口
+│   │   │       ├── router.py                 # API 总路由，统一注册所有 endpoints
 │   │   │       └── endpoints/                # 具体业务接口
 │   │   │           ├── __init__.py           # endpoints 包标识
-│   │   │           ├── health.py             # 健康检查接口，返回后端服务状态
-│   │   │           ├── auth.py               # 本地身份模拟接口，返回模拟用户和角色信息
-│   │   │           ├── documents.py          # 文档上传、文档列表、文档入库、文档删除审批申请
-│   │   │           ├── knowledge.py          # 知识库检索和知识库问答接口，返回引用来源
-│   │   │           ├── agent.py              # 通用 Agent 对话入口，执行意图识别、SOP 匹配、补槽、工具预览和审计记录
-│   │   │           ├── workflows.py          # 固定办公流程接口，包含会议、维修、质量、采购、周报
-│   │   │           ├── tasks.py              # 任务列表、任务详情、创建任务审批申请
-│   │   │           ├── tickets.py            # 工单列表、工单详情、创建设备维修/质量异常工单审批申请
-│   │   │           ├── purchases.py          # 采购申请列表、详情、创建采购申请审批申请
-│   │   │           ├── approvals.py          # 审批列表、待审批列表、批准审批、拒绝审批
-│   │   │           └── audit_logs.py         # 审计日志列表和详情查询
+│   │   │           ├── health.py             # 健康检查接口
+│   │   │           ├── auth.py               # 本地登录、当前用户和身份模拟接口
+│   │   │           ├── documents.py          # 文档上传、列表、详情、删除申请接口
+│   │   │           ├── knowledge.py          # 知识库检索和问答接口
+│   │   │           ├── agent.py              # Agent 对话入口，返回意图、SOP、补槽、Trace、工具预览
+│   │   │           ├── workflows.py          # 会议、维修、质量、采购、周报工作流接口
+│   │   │           ├── tasks.py              # 任务列表、详情、创建任务申请接口
+│   │   │           ├── tickets.py            # 工单列表、详情、创建维修/质量工单申请接口
+│   │   │           ├── purchases.py          # 采购申请列表、详情、创建采购申请接口
+│   │   │           ├── approvals.py          # 简单审批列表、批准、拒绝接口
+│   │   │           ├── approval_templates.py # 审批模板、审批步骤、多级审批配置接口
+│   │   │           ├── audit_logs.py         # 审计日志列表和详情接口
+│   │   │           ├── integrations.py       # 企业微信/钉钉/飞书/Webhook 集成配置和测试接口
+│   │   │           ├── callbacks.py          # 外部平台回调入口，处理审批/通知/事件回调
+│   │   │           ├── mobile_approvals.py   # H5 移动审批详情、批准、拒绝接口
+│   │   │           └── sla.py                # SLA 策略和 SLA 实例查询配置接口
 
 │   │   ├── core/                             # 后端基础设施层
 │   │   │   ├── __init__.py                   # core 包标识
-│   │   │   ├── config.py                     # 读取环境变量，管理数据库、上传目录、LLM、Embedding、CORS、上传大小限制
-│   │   │   ├── database.py                   # SQLAlchemy Engine、SessionLocal、Base、数据库依赖注入
-│   │   │   ├── security.py                   # 本地角色权限控制，区分 employee、manager、admin
-│   │   │   ├── logging.py                    # 后端日志格式、日志级别和日志初始化
-│   │   │   └── exceptions.py                 # 统一业务异常 AppException 和 FastAPI 异常处理
+│   │   │   ├── config.py                     # 环境变量、数据库、上传目录、模型、CORS、Redis、集成配置
+│   │   │   ├── database.py                   # SQLAlchemy Engine、Session、本地数据库依赖
+│   │   │   ├── auth.py                       # 登录态/JWT/当前用户解析的基础能力
+│   │   │   ├── permissions.py                # RBAC 和数据范围权限判断
+│   │   │   ├── security.py                   # 兼容旧版角色权限控制
+│   │   │   ├── logging.py                    # 日志格式、日志级别、日志初始化
+│   │   │   └── exceptions.py                 # 统一业务异常和 FastAPI 异常处理
 
 │   │   ├── models/                           # SQLAlchemy 数据库模型
-│   │   │   ├── __init__.py                   # 模型统一导入
-│   │   │   ├── base.py                       # Base、通用时间字段、角色/状态/优先级枚举
-│   │   │   ├── user.py                       # users 用户表，用于本地身份模拟和后续权限扩展
-│   │   │   ├── document.py                   # documents 文档表，记录文件名、分类、路径、哈希、软删除时间
-│   │   │   ├── document_chunk.py             # document_chunks 文档切块表，保存 chunk 文本、元数据和 pgvector 向量
-│   │   │   ├── task.py                       # tasks 任务表，用于会议纪要转任务后的正式任务记录
-│   │   │   ├── ticket.py                     # tickets 工单表，用于设备维修和质量异常工单
-│   │   │   ├── purchase_request.py           # purchase_requests 采购申请表，记录物品、数量、用途、预算、供应商和状态
-│   │   │   ├── approval.py                   # approvals 审批表，记录待确认动作、参数、审批人、结果和执行状态
-│   │   │   └── audit_log.py                  # audit_logs 审计日志表，记录用户输入、工具参数、输出和执行状态
+│   │   │   ├── __init__.py                   # 模型统一导入，保证 Alembic 可发现表
+│   │   │   ├── base.py                       # Base、通用时间字段、枚举和基础模型
+│   │   │   ├── user.py                       # 用户表，兼容旧角色字段并支持企业、部门、外部用户 ID
+│   │   │   ├── enterprise.py                 # 企业/租户表，一家公司一个 enterprise
+│   │   │   ├── department.py                 # 部门表，支持外部部门 ID、父子部门和部门路径
+│   │   │   ├── role.py                       # 企业角色表，如采购、质量、设备、财务、管理员
+│   │   │   ├── user_role.py                  # 用户和角色多对多关系表
+│   │   │   ├── document.py                   # 文档表，记录文件、分类、哈希、软删除和权限信息
+│   │   │   ├── document_chunk.py             # 文档切块表，保存 chunk、元数据和 pgvector 向量
+│   │   │   ├── document_permission.py        # 文档权限表，控制部门/角色/用户可见范围
+│   │   │   ├── task.py                       # 任务表，保存会议纪要转任务后的正式任务
+│   │   │   ├── ticket.py                     # 工单表，覆盖设备维修和质量异常工单
+│   │   │   ├── purchase_request.py           # 采购申请表，保存物品、数量、预算、供应商、状态
+│   │   │   ├── approval.py                   # 兼容版审批表，记录待确认动作和审批结果
+│   │   │   ├── approval_template.py          # 审批模板表，定义不同业务类型的审批规则
+│   │   │   ├── approval_step.py              # 审批步骤表，定义步骤顺序、审批人类型、会签/或签
+│   │   │   ├── approval_instance.py          # 审批实例表，一次真实审批流程的主记录
+│   │   │   ├── approval_instance_step.py     # 审批实例步骤表，记录每一步审批状态
+│   │   │   ├── approval_action.py            # 审批动作表，记录批准、拒绝、转交、撤回、评论
+│   │   │   ├── audit_log.py                  # 审计日志表，记录输入、工具参数、执行结果和状态
+│   │   │   ├── integration_config.py         # 企业集成配置表，保存平台、密钥引用、Webhook、启用状态
+│   │   │   ├── integration_event.py          # 外部回调事件表，记录事件、处理状态、失败原因、重试次数
+│   │   │   ├── notification_delivery.py      # 通知发送记录表，记录平台、接收人、发送结果和重试信息
+│   │   │   ├── external_id_mapping.py        # 本地对象和外部系统对象 ID 映射表
+│   │   │   ├── idempotency_key.py            # 幂等键表，防止重复回调、重复审批、重复同步
+│   │   │   └── sla.py                        # SLA 策略和 SLA 实例表
 
 │   │   ├── schemas/                          # Pydantic 请求和响应结构
 │   │   │   ├── __init__.py                   # schemas 包标识
-│   │   │   ├── common.py                     # 通用响应、分页响应等基础结构
-│   │   │   ├── user.py                       # 用户、登录、本地身份模拟相关结构
-│   │   │   ├── document.py                   # 文档上传、文档读取、文档切块展示结构
-│   │   │   ├── knowledge.py                  # 知识库搜索、问答、检索结果、引用来源结构
-│   │   │   ├── agent.py                      # Agent 请求、响应、工具调用预览、缺失字段、Trace 结构
-│   │   │   ├── workflow.py                   # 会议、维修、质量、采购、周报工作流输入输出结构
-│   │   │   ├── task.py                       # 任务创建、更新、读取结构
-│   │   │   ├── ticket.py                     # 工单创建、更新、读取结构
-│   │   │   ├── purchase_request.py           # 采购申请创建、更新、读取结构
-│   │   │   ├── approval.py                   # 审批创建、审批读取、批准/拒绝请求结构
-│   │   │   └── audit_log.py                  # 审计日志读取和创建结构
+│   │   │   ├── common.py                     # 通用响应、分页和基础结构
+│   │   │   ├── user.py                       # 用户、登录、当前用户响应结构
+│   │   │   ├── document.py                   # 文档上传、读取、切块、删除申请结构
+│   │   │   ├── knowledge.py                  # 知识库搜索、问答、引用来源结构
+│   │   │   ├── agent.py                      # Agent 请求、响应、SOP、补槽、Trace、工具调用结构
+│   │   │   ├── workflow.py                   # 会议、维修、质量、采购、周报工作流结构
+│   │   │   ├── task.py                       # 任务创建、读取和更新结构
+│   │   │   ├── ticket.py                     # 工单创建、读取和更新结构
+│   │   │   ├── purchase_request.py           # 采购申请创建、读取和更新结构
+│   │   │   ├── approval.py                   # 简单审批创建、读取、批准、拒绝结构
+│   │   │   ├── approval_template.py          # 审批模板、步骤、审批实例响应结构
+│   │   │   ├── audit_log.py                  # 审计日志读取结构
+│   │   │   ├── integration.py                # 企业集成配置、测试连接、通知响应结构
+│   │   │   ├── mobile_approval.py            # 移动审批详情、批准、拒绝结构
+│   │   │   └── sla.py                        # SLA 策略、实例、提醒升级结构
 
 │   │   ├── services/                         # 业务服务层
 │   │   │   ├── __init__.py                   # services 包标识
-│   │   │   ├── document_service.py           # 文档分块保存、大小限制、哈希去重、解析入库、软删除
-│   │   │   ├── knowledge_service.py          # 串联检索、Prompt、LLM 回答和引用来源，未配置模型时提供抽取式兜底
-│   │   │   ├── task_service.py               # 任务创建、查询、分页、更新，写入前受审批保护
-│   │   │   ├── ticket_service.py             # 工单创建、查询、分页、更新，写入前受审批保护
-│   │   │   ├── purchase_service.py           # 采购申请创建、查询、分页、更新，审批后进入待采购审批状态
-│   │   │   ├── approval_service.py           # 创建审批、批准审批、拒绝审批、审批通过后执行业务动作并写审计
-│   │   │   ├── approval_guard.py             # 高风险写入保护，防止绕过审批直接写任务、工单、采购、文档删除
-│   │   │   ├── audit_service.py              # 审计日志创建、查询、分页和详情
-│   │   │   └── llm_service.py                # OpenAI-compatible Chat Completions 调用封装
+│   │   │   ├── document_service.py           # 文档保存、大小限制、哈希去重、解析、切块、软删除申请
+│   │   │   ├── knowledge_service.py          # 串联 RAG 检索、Prompt、LLM 回答和引用来源
+│   │   │   ├── task_service.py               # 任务创建、查询、审批保护和外部 OA 同步触发
+│   │   │   ├── ticket_service.py             # 工单创建、查询、审批保护、SLA 和外部 MES/QMS 同步
+│   │   │   ├── purchase_service.py           # 采购申请创建、字段校验、审批保护和 ERP 同步
+│   │   │   ├── approval_service.py           # 兼容版审批服务，审批通过后执行业务动作
+│   │   │   ├── approval_engine.py            # 多级审批引擎，支持模板路由、会签/或签、动作记录
+│   │   │   ├── approval_guard.py             # 高风险写入保护，防止绕过审批直接写业务表
+│   │   │   ├── audit_service.py              # 审计日志写入、查询、分页
+│   │   │   ├── business_sync_service.py      # 业务对象同步外部系统并记录 external_id_mapping
+│   │   │   ├── permission_service.py         # 用户角色、数据范围、文档权限判断
+│   │   │   ├── sla_service.py                # SLA 策略匹配、实例创建、状态更新
+│   │   │   └── llm_service.py                # OpenAI-compatible LLM 调用封装
+
+│   │   ├── integrations/                     # 企业集成层
+│   │   │   ├── __init__.py                   # integrations 包标识
+│   │   │   ├── core/                         # 集成抽象和通用结构
+│   │   │   │   ├── __init__.py               # core 包标识
+│   │   │   │   ├── base.py                   # Provider 抽象：通知、登录、组织、审批、业务系统
+│   │   │   │   ├── schemas.py                # 集成层通用数据结构
+│   │   │   │   ├── registry.py               # 根据平台选择 local/wecom/dingtalk/feishu provider
+│   │   │   │   ├── exceptions.py             # 集成异常类型
+│   │   │   │   └── idempotency.py            # 回调、通知、外部写入幂等处理
+│   │   │   ├── providers/                    # 不同平台适配器
+│   │   │   │   ├── __init__.py               # providers 包标识
+│   │   │   │   ├── local.py                  # 本地演示 provider
+│   │   │   │   ├── generic_webhook.py        # 通用 Webhook 通知 provider
+│   │   │   │   ├── wecom.py                  # 企业微信 provider，占位真实接口和本地降级逻辑
+│   │   │   │   ├── dingtalk.py               # 钉钉 provider，占位真实接口和本地降级逻辑
+│   │   │   │   ├── feishu.py                 # 飞书 provider，占位真实接口和本地降级逻辑
+│   │   │   │   ├── generic_oa.py             # 通用 OA 适配，支持任务同步
+│   │   │   │   ├── generic_erp.py            # 通用 ERP 适配，支持采购申请同步
+│   │   │   │   ├── generic_mes.py            # 通用 MES 适配，支持维修/质量工单同步
+│   │   │   │   └── generic_wms.py            # 通用 WMS 适配，预留库存/物料查询同步
+│   │   │   ├── services/                     # 集成编排服务
+│   │   │   │   ├── __init__.py               # integration services 包标识
+│   │   │   │   ├── notification_service.py   # 统一通知服务，发送并记录 notification_delivery
+│   │   │   │   ├── org_sync_service.py       # 组织架构同步，落库 departments/users/external mappings
+│   │   │   │   ├── sso_service.py            # 企业登录和外部用户身份转换
+│   │   │   │   ├── approval_bridge_service.py# 外部审批桥接，创建外部审批并处理状态回写
+│   │   │   │   ├── business_sync_service.py  # 外部业务系统同步封装
+│   │   │   │   └── sla_escalation_service.py # SLA 提醒、超时、升级通知
+│   │   │   └── callbacks/                    # 平台回调解析
+│   │   │       ├── __init__.py               # callbacks 包标识
+│   │   │       ├── wecom_callback.py         # 企业微信回调验签/解析/内部事件转换
+│   │   │       ├── dingtalk_callback.py      # 钉钉回调验签/解析/内部事件转换
+│   │   │       └── feishu_callback.py        # 飞书回调验签/解析/内部事件转换
+
+│   │   ├── jobs/                             # 异步任务和失败重试
+│   │   │   ├── __init__.py                   # jobs 包标识
+│   │   │   ├── worker.py                     # RQ/Redis Worker 入口和任务注册
+│   │   │   ├── notification_jobs.py          # 通知发送重试任务
+│   │   │   ├── org_sync_jobs.py              # 组织架构同步任务
+│   │   │   ├── sla_jobs.py                   # SLA 扫描、提醒、超时、关闭任务
+│   │   │   ├── business_sync_jobs.py         # 外部业务系统同步重试任务
+│   │   │   └── cleanup_jobs.py               # 过期事件、通知记录、幂等键清理任务
 
 │   │   ├── rag/                              # RAG 知识库模块
 │   │   │   ├── __init__.py                   # rag 包标识
-│   │   │   ├── document_loader.py            # PDF、DOCX、TXT、Markdown 文档解析为纯文本
+│   │   │   ├── document_loader.py            # PDF、DOCX、TXT、Markdown 文档解析
 │   │   │   ├── text_splitter.py              # 中文友好的文档切块和重叠处理
-│   │   │   ├── embedding_client.py           # Embedding 客户端，支持真实 API 和本地确定性演示向量
-│   │   │   ├── vector_store.py               # pgvector 存储、向量字段封装、相似度检索和 chunk 写入
-│   │   │   ├── retriever.py                  # 根据用户问题检索相关文档片段
-│   │   │   ├── reranker.py                   # 检索结果重排，优先保留业务相关片段
-│   │   │   └── prompt_builder.py             # 构造带引用来源的 RAG Prompt 和引用标签
+│   │   │   ├── embedding_client.py           # Embedding 客户端，支持真实 API 和本地演示向量
+│   │   │   ├── vector_store.py               # pgvector 写入、检索和权限过滤
+│   │   │   ├── retriever.py                  # 根据问题检索相关 chunk，并带文档权限过滤
+│   │   │   ├── reranker.py                   # 检索结果重排
+│   │   │   └── prompt_builder.py             # 构造带引用来源的回答 Prompt
 
 │   │   ├── agents/                           # Agent 编排模块
 │   │   │   ├── __init__.py                   # agents 包标识
-│   │   │   ├── factory_office_agent.py       # Agent 总入口，优先编译 LangGraph，失败时使用本地降级流程
-│   │   │   ├── graph_state.py                # Agent 状态定义，包含输入、意图、SOP、槽位、工具、审批、Trace
-│   │   │   ├── graph_nodes.py                # 意图识别、知识检索、补槽、工具选择、审批判断、最终回答节点
-│   │   │   ├── graph_edges.py                # LangGraph 边逻辑，根据意图和审批状态决定下一步节点
-│   │   │   ├── prompts.py                    # 制造业 Agent 系统提示词和任务提示词
-│   │   │   ├── task_state.py                 # Agent 任务状态机，定义 collecting_info、waiting_approval、completed 等状态
-│   │   │   ├── sop_registry.py               # 根据意图匹配 SOP，并把 SOP 摘要转换为 Trace 信息
-│   │   │   ├── slot_filling.py               # 多轮补槽逻辑，合并上下文、提取字段、生成缺字段追问
-│   │   │   └── trace.py                      # Agent 执行轨迹工具，记录每一步节点状态和细节
+│   │   │   ├── factory_office_agent.py       # Agent 总入口，优先 LangGraph，失败走本地降级
+│   │   │   ├── graph_state.py                # Agent 状态定义
+│   │   │   ├── graph_nodes.py                # 意图识别、知识检索、补槽、工具选择、审批判断节点
+│   │   │   ├── graph_edges.py                # LangGraph 路由边逻辑
+│   │   │   ├── prompts.py                    # 制造业 Agent 提示词
+│   │   │   ├── task_state.py                 # Agent 任务状态机
+│   │   │   ├── sop_registry.py               # SOP 匹配入口
+│   │   │   ├── slot_filling.py               # 多轮补槽和缺字段追问
+│   │   │   └── trace.py                      # Agent 执行轨迹记录
 
 │   │   ├── workflows/                        # 固定办公流程模块
 │   │   │   ├── __init__.py                   # workflows 包标识
-│   │   │   ├── meeting_to_tasks.py           # 从会议纪要中提取任务草稿、负责人、截止时间和优先级
-│   │   │   ├── maintenance_ticket.py         # 根据设备异常生成维修工单草稿和排查建议
-│   │   │   ├── quality_issue.py              # 根据质量异常描述生成 NCR/质量异常工单草稿
-│   │   │   ├── purchase_request.py           # 从采购需求中提取物品、数量、用途、预算、供应商并提示缺失字段
-│   │   │   ├── weekly_report.py              # 根据项目记录生成周报草稿
-│   │   │   └── sop_definitions.py            # 定义知识问答、会议、维修、质量、采购、周报 SOP 和必填槽位
+│   │   │   ├── meeting_to_tasks.py           # 会议纪要转任务草稿
+│   │   │   ├── maintenance_ticket.py         # 设备异常转维修工单草稿
+│   │   │   ├── quality_issue.py              # 质量异常转 NCR/质量工单草稿
+│   │   │   ├── purchase_request.py           # 采购需求转采购申请草稿
+│   │   │   ├── weekly_report.py              # 项目记录转周报草稿
+│   │   │   └── sop_definitions.py            # SOP 定义和必填槽位
 
 │   │   ├── tools/                            # Agent 可调用工具层
 │   │   │   ├── __init__.py                   # tools 包标识
-│   │   │   ├── base.py                       # 工具统一结构、风险等级、审批策略和工具结果结构
-│   │   │   ├── knowledge_tools.py            # 知识库搜索工具封装
-│   │   │   ├── task_tools.py                 # 创建任务、批量任务审批载荷和任务查询工具
-│   │   │   ├── ticket_tools.py               # 维修/质量工单草稿、创建工单审批载荷和工单查询工具
-│   │   │   ├── purchase_tools.py             # 采购申请草稿、创建采购审批载荷和采购查询工具
-│   │   │   ├── approval_tools.py             # 创建审批记录、审批状态查询相关工具
-│   │   │   └── notification_tools.py         # 通知/邮件草稿工具，当前只生成草稿不真实发送
+│   │   │   ├── base.py                       # 工具统一结构、风险等级、审批策略
+│   │   │   ├── knowledge_tools.py            # 知识库搜索工具
+│   │   │   ├── task_tools.py                 # 任务创建和查询工具
+│   │   │   ├── ticket_tools.py               # 工单草稿、创建工单、查询工单工具
+│   │   │   ├── purchase_tools.py             # 采购申请草稿、创建采购、查询采购工具
+│   │   │   ├── approval_tools.py             # 审批创建和状态查询工具
+│   │   │   └── notification_tools.py         # 通知/邮件草稿工具
 
 │   │   ├── evaluators/                       # RAG 和工作流评测模块
-│   │   │   ├── rag_eval.py                   # RAG 回答评测，检查引用来源、空答案和占位回答风险
-│   │   │   ├── workflow_eval.py              # 工作流评测，检查草稿字段完整性和审批边界
-│   │   │   └── test_cases.py                 # 制造业场景评测用例集合
+│   │   │   ├── rag_eval.py                   # 知识库问答评测
+│   │   │   ├── workflow_eval.py              # 工作流输出评测
+│   │   │   └── test_cases.py                 # 制造业评测用例集合
 
-│   │   └── utils/                            # 后端通用工具函数
+│   │   └── utils/                            # 后端通用工具
 │   │       ├── __init__.py                   # utils 包标识
-│   │       ├── file_utils.py                 # 文件名清洗、扩展名校验、SHA256、删除文件等工具
-│   │       ├── time_utils.py                 # 当前时间、日期时间格式化等工具
-│   │       ├── json_utils.py                 # JSON 安全解析、序列化和字典字段提取工具
-│   │       └── id_utils.py                   # UUID、业务 ID、追踪 ID 生成工具
+│   │       ├── file_utils.py                 # 文件名清洗、扩展名校验、哈希、删除文件
+│   │       ├── time_utils.py                 # 时间格式化、当前时间、日期处理
+│   │       ├── json_utils.py                 # JSON 安全解析、序列化、字段提取
+│   │       └── id_utils.py                   # UUID、业务 ID、追踪 ID 生成
 
 │   ├── alembic/                              # 数据库迁移目录
 │   │   ├── README                            # Alembic 目录说明
-│   │   ├── env.py                            # Alembic 运行环境，加载数据库配置和模型元数据
-│   │   ├── script.py.mako                    # Alembic 迁移脚本模板
+│   │   ├── env.py                            # Alembic 环境，加载模型元数据
+│   │   ├── script.py.mako                    # 迁移脚本模板
 │   │   └── versions/
-│   │       └── 20260502_0001_initial_schema.py # 初始化 pgvector 扩展、业务表、枚举和索引
+│   │       ├── 20260502_0001_initial_schema.py                  # 初始化业务表和 pgvector
+│   │       ├── 20260525_0002_enterprise_integration_schema.py   # 企业集成、组织、角色、通知、SLA 基础表
+│   │       ├── 20260525_0003_approval_engine_schema.py          # 多级审批引擎表
+│   │       ├── 20260525_0004_document_permissions_schema.py     # 文档权限表和检索权限字段
+│   │       ├── 20260525_0005_external_mapping_nullable_external_id.py # 外部 ID 映射兼容调整
+│   │       └── 20260525_0006_notification_payload_snapshot.py   # 通知 payload 快照字段
 
 │   ├── tests/                                # 后端测试
 │   │   ├── test_health.py                    # 健康检查测试
-│   │   ├── test_document_upload.py           # 上传、解析、大小限制、去重、软删除测试
-│   │   ├── test_rag_search.py                # RAG 检索和知识工具测试
+│   │   ├── test_document_upload.py           # 文档上传、解析、限制、去重测试
+│   │   ├── test_rag_search.py                # RAG 检索测试
 │   │   ├── test_knowledge_ask.py             # 知识库问答和引用来源测试
-│   │   ├── test_workflows.py                 # 会议、维修、采购、周报工作流测试
+│   │   ├── test_workflows.py                 # 办公工作流测试
 │   │   ├── test_quality_issue_workflow.py    # 质量异常工作流测试
-│   │   ├── test_approvals.py                 # 审批创建、批准、拒绝、执行动作测试
-│   │   ├── test_agent_routes.py              # Agent 意图识别、SOP、补槽、Trace 和路由测试
-│   │   ├── test_security.py                  # 本地角色权限和高风险接口访问测试
-│   │   ├── test_seed_demo_data.py            # seed JSON 数据结构和导入逻辑测试
-│   │   └── test_ingest_demo_docs.py          # demo 文档解析、切块和批量导入测试
+│   │   ├── test_approvals.py                 # 兼容审批流程测试
+│   │   ├── test_approval_engine.py           # 多级审批引擎测试
+│   │   ├── test_approval_template_routing.py # 按金额/业务类型选择审批模板测试
+│   │   ├── test_agent_routes.py              # Agent 意图、SOP、补槽、Trace 路由测试
+│   │   ├── test_security.py                  # 权限和高风险接口测试
+│   │   ├── test_seed_demo_data.py            # seed 数据导入测试
+│   │   ├── test_ingest_demo_docs.py          # demo 文档解析和切块导入测试
+│   │   ├── test_enterprise_models.py         # 企业、部门、角色等模型测试
+│   │   ├── test_integration_configs.py       # 企业集成配置测试
+│   │   ├── test_integration_core.py          # 集成核心抽象测试
+│   │   ├── test_integration_providers.py     # wecom/dingtalk/feishu/local provider 测试
+│   │   ├── test_integration_services.py      # 集成服务编排测试
+│   │   ├── test_integration_callbacks.py     # 平台回调解析测试
+│   │   ├── test_generic_webhook_provider.py  # 通用 Webhook provider 测试
+│   │   ├── test_notification_service.py      # 通知服务和发送记录测试
+│   │   ├── test_org_sync_service.py          # 组织同步落库测试
+│   │   ├── test_callback_idempotency.py      # 回调幂等测试
+│   │   ├── test_sla_escalation.py            # SLA 提醒和升级测试
+│   │   ├── test_sla_auto_creation.py         # 工单/采购自动创建 SLA 实例测试
+│   │   ├── test_external_id_mapping.py       # 外部 ID 映射测试
+│   │   ├── test_document_permissions.py      # 文档权限模型测试
+│   │   ├── test_document_permission_filter.py# RAG 检索权限过滤测试
+│   │   ├── test_business_sync_service.py     # 外部业务同步服务测试
+│   │   ├── test_business_sync_records.py     # 外部同步记录落库测试
+│   │   └── test_jobs.py                      # 异步任务函数测试
 
 │   ├── requirements.txt                      # 后端运行依赖
 │   ├── requirements-dev.txt                  # 后端开发和测试依赖
-│   ├── Dockerfile                            # 后端 Docker 镜像构建文件
-│   ├── .dockerignore                         # 后端 Docker 构建忽略规则
+│   ├── Dockerfile                            # 后端 Docker 镜像
+│   ├── .dockerignore                         # 后端 Docker 忽略规则
 │   └── alembic.ini                           # Alembic 配置文件
 
 ├── frontend/                                 # Vue3 + Element Plus 前端
-│   ├── src/                                  # 前端源码
-│   │   ├── main.ts                           # Vue 应用入口，挂载 App、路由和 Element Plus
-│   │   ├── App.vue                           # 根组件，定义左侧菜单、顶部栏和整体页面布局
-│   │   ├── env.d.ts                          # Vite 和 TypeScript 环境类型声明
-│   │   ├── router/
-│   │   │   └── index.ts                      # 页面路由配置和左侧菜单来源
+│   ├── src/
+│   │   ├── main.ts                           # 前端入口，挂载 Vue、路由和 Element Plus
+│   │   ├── App.vue                           # 根组件，定义整体布局和侧边栏
+│   │   ├── env.d.ts                          # Vite/TypeScript 类型声明
+│   │   ├── router/index.ts                   # 页面路由和菜单配置
 │   │   ├── api/
-│   │   │   ├── http.ts                       # Axios 实例、baseURL、请求拦截器和错误标准化
-│   │   │   ├── documents.ts                  # 文档上传、列表、切块、删除申请接口封装
-│   │   │   ├── knowledge.ts                  # 知识库搜索和问答接口封装
-│   │   │   ├── agent.ts                      # Agent 对话接口、SOP、Trace、工具调用类型
-│   │   │   ├── workflows.ts                  # 会议、维修、质量、采购、周报流程接口封装
-│   │   │   ├── tasks.ts                      # 任务列表、详情、创建审批申请接口封装
-│   │   │   ├── tickets.ts                    # 工单列表、详情、创建审批申请接口封装
-│   │   │   ├── purchases.ts                  # 采购申请列表、详情、创建审批申请接口封装
-│   │   │   ├── approvals.ts                  # 审批列表、待审批、批准、拒绝接口封装
-│   │   │   └── auditLogs.ts                  # 审计日志列表和详情接口封装
+│   │   │   ├── http.ts                       # Axios 实例和错误处理
+│   │   │   ├── documents.ts                  # 文档接口封装
+│   │   │   ├── knowledge.ts                  # 知识库接口封装
+│   │   │   ├── agent.ts                      # Agent 对话接口封装
+│   │   │   ├── workflows.ts                  # 工作流接口封装
+│   │   │   ├── tasks.ts                      # 任务接口封装
+│   │   │   ├── tickets.ts                    # 工单接口封装
+│   │   │   ├── purchases.ts                  # 采购接口封装
+│   │   │   ├── approvals.ts                  # 审批接口封装
+│   │   │   ├── approvalTemplates.ts          # 审批模板接口封装
+│   │   │   ├── auditLogs.ts                  # 审计日志接口封装
+│   │   │   ├── integrations.ts               # 企业集成配置接口封装
+│   │   │   └── sla.ts                        # SLA 接口封装
 │   │   ├── views/
-│   │   │   ├── DashboardView.vue             # 首页仪表盘，展示文档、任务、工单、采购、审批和最近审计记录
-│   │   │   ├── KnowledgeBaseView.vue         # 知识库页面，支持上传文档、查看列表、提问和展示引用来源
-│   │   │   ├── AgentChatView.vue             # AI 助手页面，展示意图、SOP、任务状态、缺失字段、工具预览和 Trace
-│   │   │   ├── WorkflowsView.vue             # 办公流程页面，支持会议、维修、质量、采购、周报草稿生成
-│   │   │   ├── TasksView.vue                 # 任务页面，展示任务列表、详情和任务创建审批申请
-│   │   │   ├── TicketsView.vue               # 工单页面，展示设备维修和质量异常工单
-│   │   │   ├── PurchasesView.vue             # 采购申请页面，展示采购申请列表和详情
-│   │   │   ├── ApprovalsView.vue             # 审批页面，支持查看待审批动作、批准和拒绝
-│   │   │   └── AuditLogsView.vue             # 审计日志页面，展示用户输入、工具参数和执行结果
-│   │   ├── components/
-│   │   │   └── .gitkeep                      # 预留组件目录，后续拆分公共组件
-│   │   ├── stores/
-│   │   │   └── .gitkeep                      # 预留状态目录，后续接入全局状态管理
-│   │   ├── types/
-│   │   │   └── .gitkeep                      # 预留类型目录，后续集中管理 TypeScript 类型
-│   │   └── utils/
-│   │       └── .gitkeep                      # 预留前端工具目录
-
-│   ├── public/
-│   │   └── .gitkeep                          # 前端静态资源目录占位
+│   │   │   ├── DashboardView.vue             # 首页仪表盘
+│   │   │   ├── KnowledgeBaseView.vue         # 知识库上传、问答和引用来源页面
+│   │   │   ├── AgentChatView.vue             # Agent 对话、SOP、Trace 展示页面
+│   │   │   ├── WorkflowsView.vue             # 办公流程页面
+│   │   │   ├── TasksView.vue                 # 任务页面
+│   │   │   ├── TicketsView.vue               # 工单页面
+│   │   │   ├── PurchasesView.vue             # 采购申请页面
+│   │   │   ├── ApprovalsView.vue             # 审批处理页面
+│   │   │   ├── ApprovalTemplatesView.vue     # 审批模板配置页面
+│   │   │   ├── AuditLogsView.vue             # 审计日志页面
+│   │   │   ├── IntegrationSettingsView.vue   # 企业微信/钉钉/飞书/Webhook 集成配置页
+│   │   │   ├── OrgSyncView.vue               # 组织架构同步页面
+│   │   │   ├── SlaSettingsView.vue           # SLA 策略配置页面
+│   │   │   └── MobileApprovalView.vue        # H5 移动审批详情和处理页面
+│   │   ├── components/.gitkeep               # 预留公共组件目录
+│   │   ├── stores/.gitkeep                   # 预留前端状态目录
+│   │   ├── types/.gitkeep                    # 预留 TypeScript 类型目录
+│   │   └── utils/.gitkeep                    # 预留前端工具目录
+│   ├── public/.gitkeep                       # 静态资源目录占位
 │   ├── index.html                            # Vite HTML 入口
-│   ├── package.json                          # 前端依赖和 npm 脚本
+│   ├── package.json                          # 前端依赖和脚本
 │   ├── package-lock.json                     # 前端依赖锁定文件
-│   ├── vite.config.ts                        # Vite 配置、端口和 API 代理
+│   ├── vite.config.ts                        # Vite 配置
 │   ├── tsconfig.json                         # TypeScript 配置
-│   ├── Dockerfile                            # 前端 Docker 镜像构建文件
-│   └── .dockerignore                         # 前端 Docker 构建忽略规则
+│   ├── nginx.conf                            # 前端容器 Nginx 配置
+│   ├── Dockerfile                            # 前端 Docker 镜像
+│   └── .dockerignore                         # 前端 Docker 忽略规则
 
 ├── data/                                     # 演示数据与上传目录
-│   ├── demo_docs/
+│   ├── demo_docs/                            # 制造业模拟知识库文档
 │   │   ├── .gitkeep                          # 保留目录
-│   │   ├── 采购管理制度.md                   # 采购金额阈值、审批权限、供应商和归档规则演示文档
-│   │   ├── 差旅报销制度.md                   # 差旅申请、报销标准、票据要求和审批规则演示文档
-│   │   ├── 设备维修手册_空压机.md            # 空压机报警、点检、维修和安全排查演示文档
-│   │   ├── 质量异常处理流程.md               # 质量异常、隔离、复检、NCR 和关闭流程演示文档
-│   │   ├── 安全生产规范.md                   # 安全作业、动火审批、隐患处置和事故上报演示文档
-│   │   └── 项目周报模板.md                   # 周报结构、风险项、决策事项和下周计划模板
-│   ├── seed/
-│   │   ├── users.json                        # 演示用户、角色、部门数据
+│   │   ├── 采购管理制度.md                   # 采购制度示例
+│   │   ├── 差旅报销制度.md                   # 差旅报销制度示例
+│   │   ├── 设备维修手册_空压机.md            # 空压机维修手册示例
+│   │   ├── 质量异常处理流程.md               # 质量异常/NCR 流程示例
+│   │   ├── 安全生产规范.md                   # 安全生产规范示例
+│   │   └── 项目周报模板.md                   # 项目周报模板示例
+│   ├── seed/                                 # 初始化业务数据
+│   │   ├── enterprises.json                  # 演示企业/租户数据
+│   │   ├── departments.json                  # 演示部门数据
+│   │   ├── roles.json                        # 演示角色数据
+│   │   ├── user_roles.json                   # 演示用户角色关系
+│   │   ├── users.json                        # 演示用户数据
 │   │   ├── tasks.json                        # 演示任务数据
-│   │   ├── tickets.json                      # 演示设备维修和质量异常工单数据
+│   │   ├── tickets.json                      # 演示工单数据
 │   │   ├── purchase_requests.json            # 演示采购申请数据
-│   │   ├── approvals.json                    # 演示审批记录
-│   │   └── audit_logs.json                   # 演示审计日志记录
-│   └── uploads/
-│       └── .gitkeep                          # 保留上传目录，不提交真实上传文件
+│   │   ├── approvals.json                    # 演示兼容审批数据
+│   │   ├── approval_templates.json           # 演示审批模板数据
+│   │   ├── approval_steps.json               # 演示审批步骤数据
+│   │   ├── integration_configs.json          # 演示集成配置数据
+│   │   ├── sla_policies.json                 # 演示 SLA 策略数据
+│   │   └── audit_logs.json                   # 演示审计日志数据
+│   └── uploads/.gitkeep                      # 本地上传目录占位，不提交真实上传文件
 
-├── docs/                                     # 普通项目文档
-│   ├── architecture.md                       # 系统架构、模块分层、数据流和部署说明
-│   ├── api.md                                # 后端 API 说明和接口边界
-│   ├── database.md                           # 数据库实体、字段和关系说明
-│   ├── rag_design.md                         # RAG 文档解析、切块、向量化、检索和引用设计
-│   ├── workflow_design.md                    # 会议、维修、质量、采购、周报流程设计
-│   ├── agent_design.md                       # Agent 状态、节点、边、SOP、补槽、Trace 和工具调用设计
-│   ├── demo_script.md                        # 本地演示流程脚本
-│   └── roadmap.md                            # 后续增强方向和生产化边界
+├── docs/                                     # 项目文档
+│   ├── architecture.md                       # 系统架构说明
+│   ├── api.md                                # API 说明
+│   ├── database.md                           # 数据库设计说明
+│   ├── rag_design.md                         # RAG 设计说明
+│   ├── workflow_design.md                    # 工作流设计说明
+│   ├── agent_design.md                       # Agent 编排设计说明
+│   ├── demo_script.md                        # 演示脚本
+│   ├── roadmap.md                            # 后续计划
+│   ├── deploy_enterprise.md                  # 企业部署说明
+│   ├── enterprise_integration_design.md      # 企业集成层设计
+│   ├── integration_wecom.md                  # 企业微信集成说明
+│   ├── integration_dingtalk.md               # 钉钉集成说明
+│   ├── integration_feishu.md                 # 飞书集成说明
+│   └── security_checklist.md                 # 安全检查清单
 
 ├── scripts/                                  # 项目辅助脚本
 │   ├── seed_demo_data.py                     # 导入 data/seed/*.json 到数据库
-│   └── ingest_demo_docs.py                   # 批量导入 data/demo_docs 文档，解析、切块、向量化、入库
+│   └── ingest_demo_docs.py                   # 批量导入 demo_docs，解析、切块、向量化、入库
 
-├── .env.example                              # 环境变量模板，不包含真实密钥
+├── .env.example                              # 基础环境变量模板
+├── .env.example.enterprise                   # 企业部署环境变量模板
 ├── .gitignore                                # Git 忽略规则
-├── docker-compose.yml                        # 一键启动 PostgreSQL/pgvector、backend、frontend
+├── docker-compose.yml                        # 本地演示 Docker Compose
+├── docker-compose.enterprise.yml             # 企业部署 Docker Compose
 ├── README.md                                 # GitHub 首页说明
-├── SUPERVISOR_COMPATIBILITY.md               # 面向业务负责人和管理层的项目说明
-└── LICENSE                                   # 权利保留声明
+├── SUPERVISOR_COMPATIBILITY.md               # 面向业务负责人/管理层的说明
+└── LICENSE                                   # 权利保留许可声明
 
 ```
 
