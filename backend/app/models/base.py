@@ -27,6 +27,65 @@ class UserRole(StrEnum):
     EMPLOYEE = "employee"
 
 
+class EnterpriseStatus(StrEnum):
+    """企业/租户状态。"""
+
+    ACTIVE = "active"
+    DISABLED = "disabled"
+
+
+class DepartmentStatus(StrEnum):
+    """部门状态。"""
+
+    ACTIVE = "active"
+    DISABLED = "disabled"
+
+
+class UserStatus(StrEnum):
+    """用户账号状态。"""
+
+    ACTIVE = "active"
+    DISABLED = "disabled"
+    LEFT = "left"
+    LOCKED = "locked"
+
+
+class IntegrationConfigStatus(StrEnum):
+    """企业集成配置状态。"""
+
+    ACTIVE = "active"
+    DISABLED = "disabled"
+
+
+class IntegrationEventStatus(StrEnum):
+    """外部回调事件处理状态。"""
+
+    RECEIVED = "received"
+    PROCESSING = "processing"
+    SUCCESS = "success"
+    FAILED = "failed"
+    DUPLICATED = "duplicated"
+
+
+class NotificationDeliveryStatus(StrEnum):
+    """通知发送状态。"""
+
+    PENDING = "pending"
+    SUCCESS = "success"
+    FAILED = "failed"
+    RETRYING = "retrying"
+
+
+class SLAStatus(StrEnum):
+    """SLA 实例状态。"""
+
+    ACTIVE = "active"
+    PAUSED = "paused"
+    BREACHED = "breached"
+    RESOLVED = "resolved"
+    CANCELLED = "cancelled"
+
+
 class TaskPriority(StrEnum):
     """任务、工单等业务对象的优先级。"""
 
@@ -70,6 +129,62 @@ class ApprovalStatus(StrEnum):
     APPROVED = "approved"
     REJECTED = "rejected"
     EXECUTION_FAILED = "execution_failed"
+
+
+class ApprovalTemplateStatus(StrEnum):
+    """审批模板状态。"""
+
+    ENABLED = "enabled"
+    DISABLED = "disabled"
+
+
+class ApprovalStepMode(StrEnum):
+    """审批步骤处理模式。"""
+
+    ANY = "any"
+    ALL = "all"
+
+
+class ApproverType(StrEnum):
+    """审批人选择方式。"""
+
+    USER = "user"
+    ROLE = "role"
+    DEPARTMENT_MANAGER = "department_manager"
+    EXPRESSION = "expression"
+
+
+class ApprovalInstanceStatus(StrEnum):
+    """审批实例状态。"""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+    TRANSFERRED = "transferred"
+    ESCALATED = "escalated"
+
+
+class ApprovalStepStatus(StrEnum):
+    """审批实例步骤状态。"""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    TRANSFERRED = "transferred"
+    SKIPPED = "skipped"
+    ESCALATED = "escalated"
+
+
+class ApprovalActionType(StrEnum):
+    """审批动作类型。"""
+
+    APPROVE = "approve"
+    REJECT = "reject"
+    TRANSFER = "transfer"
+    WITHDRAW = "withdraw"
+    COMMENT = "comment"
+    ESCALATE = "escalate"
 
 
 class AuditStatus(StrEnum):

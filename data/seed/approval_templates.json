@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "enterprise_id": 1,
+    "name": "采购申请-低金额",
+    "business_type": "create_purchase_request",
+    "description": "预算低于 5000 元的采购申请，由部门主管审批。",
+    "min_amount": null,
+    "max_amount": 5000,
+    "status": "enabled",
+    "is_default": false,
+    "created_at": "2026-01-02T10:00:00+08:00"
+  },
+  {
+    "id": 2,
+    "enterprise_id": 1,
+    "name": "采购申请-中金额",
+    "business_type": "create_purchase_request",
+    "description": "预算 5000 元至 50000 元的采购申请，由部门主管和财务审核。",
+    "min_amount": 5000,
+    "max_amount": 50000,
+    "status": "enabled",
+    "is_default": false,
+    "created_at": "2026-01-02T10:01:00+08:00"
+  },
+  {
+    "id": 3,
+    "enterprise_id": 1,
+    "name": "采购申请-高金额",
+    "business_type": "create_purchase_request",
+    "description": "预算不低于 50000 元的采购申请，由部门主管、财务和管理层审批。",
+    "min_amount": 50000,
+    "max_amount": null,
+    "status": "enabled",
+    "is_default": false,
+    "created_at": "2026-01-02T10:02:00+08:00"
+  },
+  {
+    "id": 4,
+    "enterprise_id": 1,
+    "name": "设备维修工单",
+    "business_type": "create_maintenance_ticket",
+    "description": "设备维修工单由设备负责人审批，涉及停线时升级生产负责人。",
+    "min_amount": null,
+    "max_amount": null,
+    "status": "enabled",
+    "is_default": true,
+    "created_at": "2026-01-02T10:03:00+08:00"
+  },
+  {
+    "id": 5,
+    "enterprise_id": 1,
+    "name": "质量异常工单",
+    "business_type": "create_quality_issue_ticket",
+    "description": "质量异常由质量负责人审批，影响交付时升级生产负责人。",
+    "min_amount": null,
+    "max_amount": null,
+    "status": "enabled",
+    "is_default": true,
+    "created_at": "2026-01-02T10:04:00+08:00"
+  },
+  {
+    "id": 6,
+    "enterprise_id": 1,
+    "name": "批量创建任务",
+    "business_type": "create_tasks",
+    "description": "会议纪要批量创建任务由项目负责人确认。",
+    "min_amount": null,
+    "max_amount": null,
+    "status": "enabled",
+    "is_default": true,
+    "created_at": "2026-01-02T10:05:00+08:00"
+  }
+]

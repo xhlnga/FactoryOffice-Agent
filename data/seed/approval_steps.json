@@ -1,0 +1,110 @@
+[
+  {
+    "id": 1,
+    "template_id": 1,
+    "step_order": 1,
+    "name": "部门主管审批",
+    "approver_type": "department_manager",
+    "approver_value": "department_manager",
+    "mode": "any",
+    "timeout_hours": 24,
+    "escalate_to": "manager",
+    "created_at": "2026-01-02T10:10:00+08:00"
+  },
+  {
+    "id": 2,
+    "template_id": 2,
+    "step_order": 1,
+    "name": "部门主管审批",
+    "approver_type": "department_manager",
+    "approver_value": "department_manager",
+    "mode": "any",
+    "timeout_hours": 24,
+    "escalate_to": "manager",
+    "created_at": "2026-01-02T10:11:00+08:00"
+  },
+  {
+    "id": 3,
+    "template_id": 2,
+    "step_order": 2,
+    "name": "财务审核",
+    "approver_type": "role",
+    "approver_value": "finance",
+    "mode": "any",
+    "timeout_hours": 24,
+    "escalate_to": "admin",
+    "created_at": "2026-01-02T10:12:00+08:00"
+  },
+  {
+    "id": 4,
+    "template_id": 3,
+    "step_order": 1,
+    "name": "部门主管审批",
+    "approver_type": "department_manager",
+    "approver_value": "department_manager",
+    "mode": "any",
+    "timeout_hours": 24,
+    "escalate_to": "manager",
+    "created_at": "2026-01-02T10:13:00+08:00"
+  },
+  {
+    "id": 5,
+    "template_id": 3,
+    "step_order": 2,
+    "name": "财务审核",
+    "approver_type": "role",
+    "approver_value": "finance",
+    "mode": "any",
+    "timeout_hours": 24,
+    "escalate_to": "admin",
+    "created_at": "2026-01-02T10:14:00+08:00"
+  },
+  {
+    "id": 6,
+    "template_id": 3,
+    "step_order": 3,
+    "name": "管理层审批",
+    "approver_type": "role",
+    "approver_value": "manager",
+    "mode": "all",
+    "timeout_hours": 48,
+    "escalate_to": "admin",
+    "created_at": "2026-01-02T10:15:00+08:00"
+  },
+  {
+    "id": 7,
+    "template_id": 4,
+    "step_order": 1,
+    "name": "设备负责人审批",
+    "approver_type": "role",
+    "approver_value": "equipment_manager",
+    "mode": "any",
+    "timeout_hours": 4,
+    "escalate_to": "production_manager",
+    "created_at": "2026-01-02T10:16:00+08:00"
+  },
+  {
+    "id": 8,
+    "template_id": 5,
+    "step_order": 1,
+    "name": "质量负责人审批",
+    "approver_type": "role",
+    "approver_value": "quality_manager",
+    "mode": "any",
+    "timeout_hours": 4,
+    "escalate_to": "production_manager",
+    "created_at": "2026-01-02T10:17:00+08:00"
+  },
+  {
+    "id": 9,
+    "template_id": 6,
+    "step_order": 1,
+    "name": "项目负责人确认",
+    "approver_type": "role",
+    "approver_value": "project_manager",
+    "mode": "any",
+    "timeout_hours": 24,
+    "escalate_to": "manager",
+    "created_at": "2026-01-02T10:18:00+08:00"
+  }
+]

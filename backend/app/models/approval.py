@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import DateTime, Enum, JSON, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import ApprovalStatus, Base, TimestampMixin
 
@@ -26,3 +26,5 @@ class Approval(TimestampMixin, Base):
     executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), comment="执行时间")
     execution_result: Mapped[dict[str, Any] | None] = mapped_column(JSON, comment="执行结果")
     comment: Mapped[str | None] = mapped_column(String(512), comment="审批意见")
+
+    approval_instances = relationship("ApprovalInstance", back_populates="approval")

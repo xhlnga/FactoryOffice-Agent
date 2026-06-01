@@ -7,6 +7,8 @@ from app.models.base import PurchaseStatus
 from app.models.purchase_request import PurchaseRequest
 from app.schemas.purchase_request import PurchaseCreateRequest, PurchaseUpdateRequest
 from app.services.approval_guard import ensure_approved_action
+from app.services.business_sync_service import sync_purchase_request_created
+from app.services.sla_service import ensure_sla_for_purchase_request
 
 
 def create_purchase_request(
@@ -29,8 +31,11 @@ def create_purchase_request(
     if commit:
         db.commit()
         db.refresh(purchase_request)
+        ensure_sla_for_purchase_request(db, purchase_request)
+        sync_purchase_request_created(db, purchase_request)
     else:
         db.flush()
+        ensure_sla_for_purchase_request(db, purchase_request, commit=False)
     return purchase_request
 
 

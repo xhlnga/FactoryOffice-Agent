@@ -1,0 +1,108 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: factoryoffice-postgres-enterprise
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: factory_agent
+      POSTGRES_USER: factory_user
+      POSTGRES_PASSWORD: factory_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U factory_user -d factory_agent"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: factoryoffice-redis-enterprise
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: factoryoffice-backend-enterprise
+    restart: unless-stopped
+    env_file:
+      - path: .env.example.enterprise
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://factory_user:factory_pass@postgres:5432/factory_agent
+      REDIS_URL: redis://redis:6379/0
+      UPLOAD_DIR: /app/data/uploads
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads_data:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ./backend
+    container_name: factoryoffice-worker-enterprise
+    restart: unless-stopped
+    env_file:
+      - path: .env.example.enterprise
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://factory_user:factory_pass@postgres:5432/factory_agent
+      REDIS_URL: redis://redis:6379/0
+      UPLOAD_DIR: /app/data/uploads
+    command: ["sh", "-c", "alembic upgrade head && python -m app.jobs.worker worker"]
+    volumes:
+      - uploads_data:/app/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: ./backend
+    container_name: factoryoffice-scheduler-enterprise
+    restart: unless-stopped
+    env_file:
+      - path: .env.example.enterprise
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://factory_user:factory_pass@postgres:5432/factory_agent
+      REDIS_URL: redis://redis:6379/0
+    command: ["sh", "-c", "alembic upgrade head && python -m app.jobs.worker scheduler"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: factoryoffice-frontend-enterprise
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:

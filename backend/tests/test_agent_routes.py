@@ -123,6 +123,30 @@ class AgentRoutesTest(unittest.TestCase):
         self.assertEqual(audit_request.user_id, 2)
         self.assertEqual(audit_request.tool_name, "preview_purchase_request")
 
+    def test_agent_chat_accepts_context_and_returns_sop_trace(self) -> None:
+        """接口层必须把多轮上下文传给 Agent，并返回 SOP、状态和 Trace。"""
+        with patch("app.api.v1.endpoints.agent.create_audit_log"):
+            response = chat_with_agent(
+                AgentChatRequest(
+                    message="预算48000元，供应商为华南传感器。",
+                    user_id=2,
+                    context={
+                        "task_status": "collecting_info",
+                        "active_intent": "purchase_request",
+                        "active_message": "帮我申请采购20个温度传感器，用于产线设备改造。",
+                    },
+                ),
+                db=Mock(),
+            )
+
+        self.assertEqual(response.intent, "purchase_request")
+        self.assertEqual(response.sop_id, "purchase_request")
+        self.assertEqual(response.task_status, "waiting_approval")
+        self.assertTrue(response.requires_approval)
+        self.assertEqual(response.missing_fields, [])
+        self.assertTrue(any(step.step == "match_sop" for step in response.trace))
+        self.assertTrue(any(step.step == "slot_filling" for step in response.trace))
+
 
 if __name__ == "__main__":
     unittest.main()

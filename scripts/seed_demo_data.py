@@ -4,9 +4,9 @@
     python3 scripts/seed_demo_data.py
 
 说明：
-    本脚本用于本地演示和开发联调，把用户、任务、工单、采购申请、
-    审批记录和审计日志写入数据库。若相同 ID 已存在，则更新现有记录，
-    便于重复执行。
+    本脚本用于本地演示和开发联调，把企业、部门、角色、用户、集成配置、
+    SLA 策略、任务、工单、采购申请、审批记录和审计日志写入数据库。若相同 ID 已存在，
+    则更新现有记录，便于重复执行。
 """
 
 from __future__ import annotations
@@ -29,19 +29,34 @@ sys.path.insert(0, str(BACKEND_ROOT))
 from app.core.database import SessionLocal  # noqa: E402
 from app.models.audit_log import AuditLog  # noqa: E402
 from app.models.approval import Approval  # noqa: E402
+from app.models.approval_step import ApprovalStep  # noqa: E402
+from app.models.approval_template import ApprovalTemplate  # noqa: E402
 from app.models.base import (  # noqa: E402
+    ApprovalStepMode,
     ApprovalStatus,
+    ApprovalTemplateStatus,
+    ApproverType,
     AuditStatus,
+    DepartmentStatus,
+    EnterpriseStatus,
+    IntegrationConfigStatus,
     PurchaseStatus,
     TaskPriority,
     TaskStatus,
     TicketStatus,
     UserRole,
+    UserStatus,
 )
+from app.models.department import Department  # noqa: E402
+from app.models.enterprise import Enterprise  # noqa: E402
+from app.models.integration_config import IntegrationConfig  # noqa: E402
 from app.models.purchase_request import PurchaseRequest  # noqa: E402
+from app.models.role import Role  # noqa: E402
+from app.models.sla import SLAPolicyModel  # noqa: E402
 from app.models.task import Task  # noqa: E402
 from app.models.ticket import Ticket  # noqa: E402
 from app.models.user import User  # noqa: E402
+from app.models.user_role import UserRoleBinding  # noqa: E402
 
 
 def main() -> None:
@@ -52,7 +67,35 @@ def main() -> None:
     try:
         with SessionLocal() as db:
             imported = {
+                "enterprises": upsert_records(db, Enterprise, load_json("enterprises.json"), enterprise_converter),
+                "departments": upsert_records(db, Department, load_json("departments.json"), department_converter),
+                "roles": upsert_records(db, Role, load_json("roles.json"), role_converter),
                 "users": upsert_records(db, User, load_json("users.json"), user_converter),
+                "user_roles": upsert_user_roles(db, load_json("user_roles.json")),
+                "integration_configs": upsert_records(
+                    db,
+                    IntegrationConfig,
+                    load_json("integration_configs.json"),
+                    integration_config_converter,
+                ),
+                "sla_policies": upsert_records(
+                    db,
+                    SLAPolicyModel,
+                    load_json("sla_policies.json"),
+                    sla_policy_converter,
+                ),
+                "approval_templates": upsert_records(
+                    db,
+                    ApprovalTemplate,
+                    load_json("approval_templates.json"),
+                    approval_template_converter,
+                ),
+                "approval_steps": upsert_records(
+                    db,
+                    ApprovalStep,
+                    load_json("approval_steps.json"),
+                    approval_step_converter,
+                ),
                 "tasks": upsert_records(db, Task, load_json("tasks.json"), task_converter),
                 "tickets": upsert_records(db, Ticket, load_json("tickets.json"), ticket_converter),
                 "purchase_requests": upsert_records(
@@ -101,10 +144,30 @@ def upsert_records(db, model, rows: list[dict[str, Any]], converter) -> int:
     return len(rows)
 
 
+def upsert_user_roles(db, rows: list[dict[str, Any]]) -> int:
+    """按用户 ID 和角色 ID 更新或插入用户角色关系。"""
+    for row in rows:
+        values = user_role_converter(row)
+        record = db.get(UserRoleBinding, (values["user_id"], values["role_id"]))
+        if record is None:
+            db.add(UserRoleBinding(**values))
+            continue
+        for field, value in values.items():
+            setattr(record, field, value)
+    return len(rows)
+
+
 def reset_id_sequences(db) -> None:
     """校准 PostgreSQL 自增序列，避免 seed 固定 ID 之后新建记录撞主键。"""
     table_names = [
+        "enterprises",
+        "departments",
+        "roles",
         "users",
+        "integration_configs",
+        "sla_policies",
+        "approval_templates",
+        "approval_steps",
         "tasks",
         "tickets",
         "purchase_requests",
@@ -126,10 +189,76 @@ def reset_id_sequences(db) -> None:
         )
 
 
+def enterprise_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "status": EnterpriseStatus(row["status"]),
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
+def department_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "status": DepartmentStatus(row["status"]),
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
+def role_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
 def user_converter(row: dict[str, Any]) -> dict[str, Any]:
     return {
         **row,
         "role": UserRole(row["role"]),
+        "status": UserStatus(row.get("status", UserStatus.ACTIVE.value)),
+        "is_admin": bool(row.get("is_admin", False)),
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
+def user_role_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
+def integration_config_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "status": IntegrationConfigStatus(row["status"]),
+        "last_health_check_at": parse_datetime(row.get("last_health_check_at")),
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
+def sla_policy_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "enabled": bool(row.get("enabled", True)),
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
+def approval_template_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "status": ApprovalTemplateStatus(row["status"]),
+        "created_at": parse_datetime(row["created_at"]),
+    }
+
+
+def approval_step_converter(row: dict[str, Any]) -> dict[str, Any]:
+    return {
+        **row,
+        "approver_type": ApproverType(row["approver_type"]),
+        "mode": ApprovalStepMode(row["mode"]),
         "created_at": parse_datetime(row["created_at"]),
     }
 

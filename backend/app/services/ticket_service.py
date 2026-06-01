@@ -6,6 +6,8 @@ from app.core.exceptions import AppException
 from app.models.ticket import Ticket
 from app.schemas.ticket import TicketCreateRequest, TicketUpdateRequest
 from app.services.approval_guard import ensure_approved_action
+from app.services.business_sync_service import sync_ticket_created
+from app.services.sla_service import ensure_sla_for_ticket
 
 
 def create_ticket(
@@ -22,8 +24,11 @@ def create_ticket(
     if commit:
         db.commit()
         db.refresh(ticket)
+        ensure_sla_for_ticket(db, ticket)
+        sync_ticket_created(db, ticket)
     else:
         db.flush()
+        ensure_sla_for_ticket(db, ticket, commit=False)
     return ticket
 
 

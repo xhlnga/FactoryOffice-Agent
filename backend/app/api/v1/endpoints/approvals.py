@@ -7,11 +7,14 @@ from app.core.database import get_db
 from app.core.security import UserRole, require_role
 from app.models.base import ApprovalStatus
 from app.schemas.approval import ApprovalDecisionRequest, ApprovalRead
+from app.schemas.approval_template import ApprovalTransferRequest, ApprovalWithdrawRequest
 from app.services.approval_service import (
     approve_approval,
     list_approvals,
     list_pending_approvals,
     reject_approval,
+    transfer_approval,
+    withdraw_approval,
 )
 
 router = APIRouter()
@@ -60,9 +63,12 @@ def approve(
 ) -> dict:
     """批准待执行动作，后续由服务层触发工具执行。"""
     approval = approve_approval(db, approval_id, request)
+    message = "审批已批准，业务动作已执行并写入审计日志。"
+    if approval.status == ApprovalStatus.PENDING:
+        message = "当前审批步骤已批准，仍需后续审批步骤完成后再执行业务动作。"
     return {
         "approval": ApprovalRead.model_validate(approval).model_dump(mode="json"),
-        "message": "审批已批准，业务动作已执行并写入审计日志。",
+        "message": message,
     }
 
 
@@ -78,4 +84,34 @@ def reject(
     return {
         "approval": ApprovalRead.model_validate(approval).model_dump(mode="json"),
         "message": "审批已拒绝，业务动作不会执行。",
+    }
+
+
+@router.post("/{approval_id}/transfer", summary="转交审批")
+def transfer(
+    approval_id: int,
+    request: ApprovalTransferRequest,
+    db: Session = Depends(get_db),
+    _role: UserRole = Depends(require_role(UserRole.MANAGER)),
+) -> dict:
+    """转交当前审批步骤。"""
+    approval = transfer_approval(db, approval_id, request)
+    return {
+        "approval": ApprovalRead.model_validate(approval).model_dump(mode="json"),
+        "message": "审批已转交。",
+    }
+
+
+@router.post("/{approval_id}/withdraw", summary="撤回审批")
+def withdraw(
+    approval_id: int,
+    request: ApprovalWithdrawRequest,
+    db: Session = Depends(get_db),
+    _role: UserRole = Depends(require_role(UserRole.MANAGER)),
+) -> dict:
+    """撤回待审批动作，业务动作不会执行。"""
+    approval = withdraw_approval(db, approval_id, request)
+    return {
+        "approval": ApprovalRead.model_validate(approval).model_dump(mode="json"),
+        "message": "审批已撤回，业务动作不会执行。",
     }

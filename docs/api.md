@@ -34,10 +34,16 @@ http://localhost:8000/docs
 }
 ```
 
-## 2. 身份模拟
+## 2. 本地演示登录与权限
 
-当前阶段使用本地身份模拟，后续可替换为正式认证。
-涉及审批、审计日志和文档删除申请的接口需要在请求头中提供主管或管理员角色：
+当前阶段使用本地演示登录，后续可替换为企业 SSO、企业微信、钉钉或飞书登录。
+涉及审批、审计日志和文档删除申请的接口优先读取登录返回的 Bearer token：
+
+```text
+Authorization: Bearer <access_token>
+```
+
+为了方便本地调试，也兼容请求头角色：
 
 ```text
 X-User-Role: manager
@@ -57,11 +63,11 @@ X-User-Role: manager
 }
 ```
 
-响应包含模拟 token 和用户信息。
+响应包含本地演示 token 和用户信息。
 
 ### GET `/api/auth/me`
 
-返回当前默认模拟用户。
+返回当前请求身份。携带 Bearer token 时返回 token 中的用户和角色；未登录时返回本地演示默认身份。
 
 ## 3. 文档管理
 
@@ -308,6 +314,22 @@ execution_failed
 ### POST `/api/approvals/{approval_id}/reject`
 
 拒绝审批，业务动作不会执行。
+
+### 移动审批接口
+
+企业微信、钉钉、飞书或通用 Webhook 通知中的 H5 审批链接会携带签名 token：
+
+```text
+/mobile/approvals/{approval_id}?token=<signed_token>
+```
+
+后端对应接口：
+
+- GET `/api/mobile/approvals/{approval_id}?token=...`
+- POST `/api/mobile/approvals/{approval_id}/approve?token=...`
+- POST `/api/mobile/approvals/{approval_id}/reject?token=...`
+
+没有管理员/主管登录态时，移动审批接口必须校验该 token，避免只靠审批 ID 操作。
 
 ## 9. 审计日志
 

@@ -19,6 +19,7 @@ yarn-debug.log*
 .env
 .env.*
 !.env.example
+!.env.example.enterprise
 
 # 本地上传文件，只保留目录
 data/uploads/*

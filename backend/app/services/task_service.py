@@ -6,6 +6,7 @@ from app.core.exceptions import AppException
 from app.models.task import Task
 from app.schemas.task import TaskCreateRequest, TaskUpdateRequest
 from app.services.approval_guard import ensure_approved_action
+from app.services.business_sync_service import sync_task_created
 
 
 def create_task(
@@ -22,6 +23,7 @@ def create_task(
     if commit:
         db.commit()
         db.refresh(task)
+        sync_task_created(db, task)
     else:
         db.flush()
     return task

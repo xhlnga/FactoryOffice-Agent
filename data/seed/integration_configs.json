@@ -1,0 +1,18 @@
+[
+  {
+    "id": 1,
+    "enterprise_id": 1,
+    "platform": "local",
+    "name": "本地演示集成",
+    "status": "active",
+    "corp_id": null,
+    "app_key": null,
+    "agent_id": null,
+    "encrypted_config": {},
+    "webhook_url": null,
+    "callback_url": null,
+    "last_health_check_at": null,
+    "last_health_status": null,
+    "created_at": "2026-05-02T09:00:00"
+  }
+]

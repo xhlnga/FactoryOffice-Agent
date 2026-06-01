@@ -6,7 +6,15 @@ from scripts import seed_demo_data
 
 
 EXPECTED_SEED_FILES = {
+    "enterprises.json",
+    "departments.json",
+    "roles.json",
     "users.json",
+    "user_roles.json",
+    "integration_configs.json",
+    "sla_policies.json",
+    "approval_templates.json",
+    "approval_steps.json",
     "tasks.json",
     "tickets.json",
     "purchase_requests.json",
@@ -24,20 +32,37 @@ class SeedDemoDataTest(unittest.TestCase):
             rows = seed_demo_data.load_json(filename)
 
             self.assertTrue(rows, f"{filename} 不应为空。")
-            self.assertTrue(all("id" in row for row in rows), f"{filename} 每条数据都应包含 id。")
+            if filename == "user_roles.json":
+                self.assertTrue(
+                    all("user_id" in row and "role_id" in row for row in rows),
+                    "user_roles.json 每条数据都应包含 user_id 和 role_id。",
+                )
+            else:
+                self.assertTrue(all("id" in row for row in rows), f"{filename} 每条数据都应包含 id。")
 
     def test_seed_ids_are_unique_inside_each_file(self) -> None:
         """同一个 seed 文件内 ID 不能重复，避免导入时互相覆盖。"""
         for filename in EXPECTED_SEED_FILES:
             rows = seed_demo_data.load_json(filename)
-            ids = [row["id"] for row in rows]
+            if filename == "user_roles.json":
+                ids = [(row["user_id"], row["role_id"]) for row in rows]
+            else:
+                ids = [row["id"] for row in rows]
 
             self.assertEqual(len(ids), len(set(ids)), f"{filename} 存在重复 id。")
 
     def test_seed_rows_can_be_converted_to_model_values(self) -> None:
         """验证 JSON 字段可以转换成模型需要的枚举和日期类型。"""
         converter_cases = [
+            ("enterprises.json", seed_demo_data.enterprise_converter),
+            ("departments.json", seed_demo_data.department_converter),
+            ("roles.json", seed_demo_data.role_converter),
             ("users.json", seed_demo_data.user_converter),
+            ("user_roles.json", seed_demo_data.user_role_converter),
+            ("integration_configs.json", seed_demo_data.integration_config_converter),
+            ("sla_policies.json", seed_demo_data.sla_policy_converter),
+            ("approval_templates.json", seed_demo_data.approval_template_converter),
+            ("approval_steps.json", seed_demo_data.approval_step_converter),
             ("tasks.json", seed_demo_data.task_converter),
             ("tickets.json", seed_demo_data.ticket_converter),
             ("purchase_requests.json", seed_demo_data.purchase_converter),
@@ -98,7 +123,21 @@ class SeedDemoDataTest(unittest.TestCase):
 
         self.assertEqual(
             table_names,
-            ["users", "tasks", "tickets", "purchase_requests", "approvals", "audit_logs"],
+            [
+                "enterprises",
+                "departments",
+                "roles",
+                "users",
+                "integration_configs",
+                "sla_policies",
+                "approval_templates",
+                "approval_steps",
+                "tasks",
+                "tickets",
+                "purchase_requests",
+                "approvals",
+                "audit_logs",
+            ],
         )
         self.assertTrue(all("setval" in statement for statement, _params in db.calls))
 

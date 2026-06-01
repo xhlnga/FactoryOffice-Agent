@@ -1,0 +1,90 @@
+[
+  {
+    "id": 1,
+    "enterprise_id": 1,
+    "external_department_id": "local-info",
+    "parent_id": null,
+    "name": "信息化办公室",
+    "path": "华东精工制造有限公司/信息化办公室",
+    "sort_order": 10,
+    "status": "active",
+    "created_at": "2026-01-02T08:35:00+08:00"
+  },
+  {
+    "id": 2,
+    "enterprise_id": 1,
+    "external_department_id": "local-purchase",
+    "parent_id": null,
+    "name": "采购部",
+    "path": "华东精工制造有限公司/采购部",
+    "sort_order": 20,
+    "status": "active",
+    "created_at": "2026-01-02T08:36:00+08:00"
+  },
+  {
+    "id": 3,
+    "enterprise_id": 1,
+    "external_department_id": "local-equipment",
+    "parent_id": null,
+    "name": "设备部",
+    "path": "华东精工制造有限公司/设备部",
+    "sort_order": 30,
+    "status": "active",
+    "created_at": "2026-01-02T08:37:00+08:00"
+  },
+  {
+    "id": 4,
+    "enterprise_id": 1,
+    "external_department_id": "local-quality",
+    "parent_id": null,
+    "name": "质量部",
+    "path": "华东精工制造有限公司/质量部",
+    "sort_order": 40,
+    "status": "active",
+    "created_at": "2026-01-02T08:38:00+08:00"
+  },
+  {
+    "id": 5,
+    "enterprise_id": 1,
+    "external_department_id": "local-safety",
+    "parent_id": null,
+    "name": "安全环保部",
+    "path": "华东精工制造有限公司/安全环保部",
+    "sort_order": 50,
+    "status": "active",
+    "created_at": "2026-01-02T08:39:00+08:00"
+  },
+  {
+    "id": 6,
+    "enterprise_id": 1,
+    "external_department_id": "local-production",
+    "parent_id": null,
+    "name": "生产部",
+    "path": "华东精工制造有限公司/生产部",
+    "sort_order": 60,
+    "status": "active",
+    "created_at": "2026-01-02T08:40:00+08:00"
+  },
+  {
+    "id": 7,
+    "enterprise_id": 1,
+    "external_department_id": "local-finance",
+    "parent_id": null,
+    "name": "财务部",
+    "path": "华东精工制造有限公司/财务部",
+    "sort_order": 70,
+    "status": "active",
+    "created_at": "2026-01-02T08:41:00+08:00"
+  },
+  {
+    "id": 8,
+    "enterprise_id": 1,
+    "external_department_id": "local-pmo",
+    "parent_id": null,
+    "name": "项目管理办公室",
+    "path": "华东精工制造有限公司/项目管理办公室",
+    "sort_order": 80,
+    "status": "active",
+    "created_at": "2026-01-02T08:42:00+08:00"
+  }
+]

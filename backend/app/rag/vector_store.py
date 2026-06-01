@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.document_chunk import DocumentChunk
 from app.rag.text_splitter import TextChunk
+from app.services.permission_service import DocumentAccessContext, build_document_permission_sql, table_exists
 
 
 @dataclass(slots=True)
@@ -57,12 +58,18 @@ def search_similar_chunks(
     *,
     query_embedding: list[float],
     top_k: int = 5,
+    auth_context: DocumentAccessContext | None = None,
 ) -> list[VectorSearchResult]:
     """基于 pgvector 余弦距离检索相似切块。"""
     vector_literal = _to_vector_literal(query_embedding)
+    permission_sql = ""
+    permission_params: dict[str, Any] = {}
+    if auth_context is not None and table_exists(db, "document_permissions"):
+        permission_sql, permission_params = build_document_permission_sql(auth_context)
+
     rows = db.execute(
         text(
-            """
+            f"""
             SELECT
                 dc.id AS chunk_id,
                 dc.document_id AS document_id,
@@ -76,11 +83,12 @@ def search_similar_chunks(
             JOIN documents d ON d.id = dc.document_id
             WHERE dc.embedding IS NOT NULL
               AND d.deleted_at IS NULL
+              {permission_sql}
             ORDER BY dc.embedding <=> CAST(:query_embedding AS vector)
             LIMIT :top_k
             """
         ),
-        {"query_embedding": vector_literal, "top_k": top_k},
+        {"query_embedding": vector_literal, "top_k": top_k, **permission_params},
     ).mappings()
 
     return [

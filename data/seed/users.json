@@ -4,6 +4,14 @@
     "username": "admin",
     "role": "admin",
     "department": "信息化办公室",
+    "enterprise_id": 1,
+    "external_user_id": "local-admin",
+    "department_id": 1,
+    "position": "系统管理员",
+    "mobile_hash": "6a82ac6d92897e3d67d663c4e7c4052d8b30aeb76e827913d32258cb49b4add2",
+    "email": "admin@example.local",
+    "status": "active",
+    "is_admin": true,
     "created_at": "2026-01-02T09:00:00+08:00"
   },
   {
@@ -11,6 +19,14 @@
     "username": "zhang_li",
     "role": "employee",
     "department": "采购部",
+    "enterprise_id": 1,
+    "external_user_id": "local-zhang-li",
+    "department_id": 2,
+    "position": "采购专员",
+    "mobile_hash": "9faea9072992c7b6a6838495c62e9d75f66660f8583e1147949eabee7a382171",
+    "email": "zhang.li@example.local",
+    "status": "active",
+    "is_admin": false,
     "created_at": "2026-01-02T09:05:00+08:00"
   },
   {
@@ -18,6 +34,14 @@
     "username": "li_qiang",
     "role": "employee",
     "department": "设备部",
+    "enterprise_id": 1,
+    "external_user_id": "local-li-qiang",
+    "department_id": 3,
+    "position": "设备工程师",
+    "mobile_hash": "6d3948f11af6fabc380e18c65a59d869c9b169fee6d7d46b960906e4e62a0e2d",
+    "email": "li.qiang@example.local",
+    "status": "active",
+    "is_admin": false,
     "created_at": "2026-01-02T09:10:00+08:00"
   },
   {
@@ -25,6 +49,14 @@
     "username": "zhou_ting",
     "role": "employee",
     "department": "质量部",
+    "enterprise_id": 1,
+    "external_user_id": "local-zhou-ting",
+    "department_id": 4,
+    "position": "质量工程师",
+    "mobile_hash": "6c92dc8dbe778e75418ceba6e5d6a852fde70be8c0df488953b89848b3f49a1f",
+    "email": "zhou.ting@example.local",
+    "status": "active",
+    "is_admin": false,
     "created_at": "2026-01-02T09:15:00+08:00"
   },
   {
@@ -32,6 +64,14 @@
     "username": "wang_min",
     "role": "manager",
     "department": "安全环保部",
+    "enterprise_id": 1,
+    "external_user_id": "local-wang-min",
+    "department_id": 5,
+    "position": "安全主管",
+    "mobile_hash": "e7a62f9cddbbfe0d6f389953cf1e8ef5602aa2e510d5737f1ff050ad960e444c",
+    "email": "wang.min@example.local",
+    "status": "active",
+    "is_admin": false,
     "created_at": "2026-01-02T09:20:00+08:00"
   },
   {
@@ -39,6 +79,14 @@
     "username": "chen_hao",
     "role": "manager",
     "department": "生产部",
+    "enterprise_id": 1,
+    "external_user_id": "local-chen-hao",
+    "department_id": 6,
+    "position": "生产经理",
+    "mobile_hash": "984691c79fe84029a75bd2a708d5862b807f49c146706d8eb16d14066c17bd46",
+    "email": "chen.hao@example.local",
+    "status": "active",
+    "is_admin": false,
     "created_at": "2026-01-02T09:25:00+08:00"
   },
   {
@@ -46,6 +94,14 @@
     "username": "sun_yan",
     "role": "manager",
     "department": "财务部",
+    "enterprise_id": 1,
+    "external_user_id": "local-sun-yan",
+    "department_id": 7,
+    "position": "财务经理",
+    "mobile_hash": "910dbe68ed63220f56c681e3a2ea32f95e6fea023e54669d4db42f9a8a2f6a84",
+    "email": "sun.yan@example.local",
+    "status": "active",
+    "is_admin": false,
     "created_at": "2026-01-02T09:30:00+08:00"
   },
   {
@@ -53,6 +109,14 @@
     "username": "zhao_lei",
     "role": "manager",
     "department": "项目管理办公室",
+    "enterprise_id": 1,
+    "external_user_id": "local-zhao-lei",
+    "department_id": 8,
+    "position": "项目经理",
+    "mobile_hash": "7998c10a93b06bde41390fbc84052e852c1db784e9c78baab95094e187c138c3",
+    "email": "zhao.lei@example.local",
+    "status": "active",
+    "is_admin": false,
     "created_at": "2026-01-02T09:35:00+08:00"
   }
 ]

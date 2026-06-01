@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "enterprise_id": 1,
+    "code": "admin",
+    "name": "系统管理员",
+    "description": "维护系统配置、企业集成配置和全局审计。",
+    "is_system": true,
+    "created_at": "2026-01-02T08:50:00+08:00"
+  },
+  {
+    "id": 2,
+    "enterprise_id": 1,
+    "code": "manager",
+    "name": "部门主管",
+    "description": "处理本部门审批、任务跟踪和业务确认。",
+    "is_system": true,
+    "created_at": "2026-01-02T08:51:00+08:00"
+  },
+  {
+    "id": 3,
+    "enterprise_id": 1,
+    "code": "employee",
+    "name": "普通员工",
+    "description": "提交问答、任务、工单、采购和周报请求。",
+    "is_system": true,
+    "created_at": "2026-01-02T08:52:00+08:00"
+  },
+  {
+    "id": 4,
+    "enterprise_id": 1,
+    "code": "purchaser",
+    "name": "采购专员",
+    "description": "处理采购申请、供应商信息和采购流程确认。",
+    "is_system": false,
+    "created_at": "2026-01-02T08:53:00+08:00"
+  },
+  {
+    "id": 5,
+    "enterprise_id": 1,
+    "code": "equipment_manager",
+    "name": "设备负责人",
+    "description": "处理设备维修工单、停线风险和维修 SLA。",
+    "is_system": false,
+    "created_at": "2026-01-02T08:54:00+08:00"
+  },
+  {
+    "id": 6,
+    "enterprise_id": 1,
+    "code": "quality_manager",
+    "name": "质量负责人",
+    "description": "处理质量异常、NCR、复检和出货风险。",
+    "is_system": false,
+    "created_at": "2026-01-02T08:55:00+08:00"
+  },
+  {
+    "id": 7,
+    "enterprise_id": 1,
+    "code": "finance",
+    "name": "财务审核",
+    "description": "处理预算、报销、采购金额和财务合规审核。",
+    "is_system": false,
+    "created_at": "2026-01-02T08:56:00+08:00"
+  },
+  {
+    "id": 8,
+    "enterprise_id": 1,
+    "code": "safety_manager",
+    "name": "安全负责人",
+    "description": "处理安全生产、风险作业和现场安全审批。",
+    "is_system": false,
+    "created_at": "2026-01-02T08:57:00+08:00"
+  },
+  {
+    "id": 9,
+    "enterprise_id": 1,
+    "code": "production_manager",
+    "name": "生产负责人",
+    "description": "处理产线影响、生产计划和停线升级。",
+    "is_system": false,
+    "created_at": "2026-01-02T08:58:00+08:00"
+  },
+  {
+    "id": 10,
+    "enterprise_id": 1,
+    "code": "project_manager",
+    "name": "项目负责人",
+    "description": "处理项目任务、会议纪要、周报和风险事项。",
+    "is_system": false,
+    "created_at": "2026-01-02T08:59:00+08:00"
+  }
+]

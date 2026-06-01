@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 
+from app.core.auth import AuthenticatedUser, get_current_user_optional
 from app.core.database import get_db
 from app.core.security import UserRole, require_role
 from app.schemas.approval import ApprovalCreateRequest
@@ -13,6 +14,7 @@ from app.services.document_service import get_document
 from app.services.document_service import index_document_for_knowledge_base
 from app.services.document_service import list_documents as list_document_records
 from app.services.document_service import save_upload_and_create_document
+from app.services.permission_service import build_document_access_context
 from app.utils.file_utils import unlink_if_exists
 
 router = APIRouter()
@@ -23,9 +25,11 @@ def list_documents(
     offset: Annotated[int, Query(ge=0, description="偏移量")] = 0,
     limit: Annotated[int, Query(ge=1, le=100, description="返回数量上限")] = 20,
     db: Session = Depends(get_db),
+    current_user: Annotated[AuthenticatedUser | None, Depends(get_current_user_optional)] = None,
 ) -> dict:
     """查询未删除的知识库文档。"""
-    items, total = list_document_records(db, offset=offset, limit=limit)
+    auth_context = build_document_access_context(db, current_user)
+    items, total = list_document_records(db, offset=offset, limit=limit, auth_context=auth_context)
     return {
         "items": [DocumentRead.model_validate(item).model_dump(mode="json") for item in items],
         "total": total,
@@ -38,9 +42,11 @@ async def upload_document(
     file: UploadFile = File(...),
     category: Annotated[str, Query(min_length=1, max_length=64, description="文档分类")] = "未分类",
     db: Session = Depends(get_db),
+    current_user: Annotated[AuthenticatedUser | None, Depends(get_current_user_optional)] = None,
 ) -> dict:
     """上传文件、创建文档记录，并同步完成知识库切块入库。"""
-    document = await save_upload_and_create_document(db, file, category=category)
+    auth_context = build_document_access_context(db, current_user)
+    document = await save_upload_and_create_document(db, file, category=category, auth_context=auth_context)
     try:
         chunk_count = index_document_for_knowledge_base(db, document)
     except Exception:
@@ -63,9 +69,11 @@ def request_delete_document(
     document_id: int,
     db: Session = Depends(get_db),
     _role: UserRole = Depends(require_role(UserRole.MANAGER)),
+    current_user: Annotated[AuthenticatedUser | None, Depends(get_current_user_optional)] = None,
 ) -> dict:
     """提交删除文档审批；审批通过后才会软删除。"""
-    get_document(db, document_id)
+    auth_context = build_document_access_context(db, current_user)
+    get_document(db, document_id, auth_context=auth_context)
     approval = create_approval(
         db,
         ApprovalCreateRequest(

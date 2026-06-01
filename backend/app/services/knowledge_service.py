@@ -8,11 +8,17 @@ from app.rag.vector_store import VectorSearchResult
 from app.schemas.knowledge import Citation, KnowledgeAskRequest, KnowledgeAskResponse, KnowledgeSearchRequest, KnowledgeSearchResponse
 from app.schemas.knowledge import KnowledgeSearchResult
 from app.services.llm_service import chat_completion
+from app.services.permission_service import DocumentAccessContext
 
 
-def search_knowledge(db: Session, request: KnowledgeSearchRequest) -> KnowledgeSearchResponse:
+def search_knowledge(
+    db: Session,
+    request: KnowledgeSearchRequest,
+    *,
+    auth_context: DocumentAccessContext | None = None,
+) -> KnowledgeSearchResponse:
     """知识库检索入口。"""
-    results = retrieve_relevant_chunks(db, query=request.query, top_k=request.top_k)
+    results = retrieve_relevant_chunks(db, query=request.query, top_k=request.top_k, auth_context=auth_context)
     return KnowledgeSearchResponse(
         query=request.query,
         top_k=request.top_k,
@@ -21,9 +27,14 @@ def search_knowledge(db: Session, request: KnowledgeSearchRequest) -> KnowledgeS
     )
 
 
-def ask_knowledge(db: Session, request: KnowledgeAskRequest) -> KnowledgeAskResponse:
+def ask_knowledge(
+    db: Session,
+    request: KnowledgeAskRequest,
+    *,
+    auth_context: DocumentAccessContext | None = None,
+) -> KnowledgeAskResponse:
     """知识库问答入口。"""
-    results = retrieve_relevant_chunks(db, query=request.question, top_k=request.top_k)
+    results = retrieve_relevant_chunks(db, query=request.question, top_k=request.top_k, auth_context=auth_context)
     if not results:
         return KnowledgeAskResponse(
             question=request.question,

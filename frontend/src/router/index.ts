@@ -1,11 +1,16 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 
 import AgentChatView from '../views/AgentChatView.vue'
+import ApprovalTemplatesView from '../views/ApprovalTemplatesView.vue'
 import ApprovalsView from '../views/ApprovalsView.vue'
 import AuditLogsView from '../views/AuditLogsView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import IntegrationSettingsView from '../views/IntegrationSettingsView.vue'
 import KnowledgeBaseView from '../views/KnowledgeBaseView.vue'
+import MobileApprovalView from '../views/MobileApprovalView.vue'
+import OrgSyncView from '../views/OrgSyncView.vue'
 import PurchasesView from '../views/PurchasesView.vue'
+import SlaSettingsView from '../views/SlaSettingsView.vue'
 import TasksView from '../views/TasksView.vue'
 import TicketsView from '../views/TicketsView.vue'
 import WorkflowsView from '../views/WorkflowsView.vue'
@@ -60,10 +65,40 @@ export const routes: RouteRecordRaw[] = [
     meta: { title: '审批', showInMenu: true },
   },
   {
+    path: '/approval-templates',
+    name: 'approvalTemplates',
+    component: ApprovalTemplatesView,
+    meta: { title: '审批模板', showInMenu: true },
+  },
+  {
     path: '/audit-logs',
     name: 'auditLogs',
     component: AuditLogsView,
     meta: { title: '审计日志', showInMenu: true },
+  },
+  {
+    path: '/integrations',
+    name: 'integrations',
+    component: IntegrationSettingsView,
+    meta: { title: '企业集成', showInMenu: true },
+  },
+  {
+    path: '/org-sync',
+    name: 'orgSync',
+    component: OrgSyncView,
+    meta: { title: '组织同步', showInMenu: true },
+  },
+  {
+    path: '/sla',
+    name: 'sla',
+    component: SlaSettingsView,
+    meta: { title: 'SLA', showInMenu: true },
+  },
+  {
+    path: '/mobile/approvals/:id',
+    name: 'mobileApproval',
+    component: MobileApprovalView,
+    meta: { title: '移动审批', showInMenu: false },
   },
 ]
 

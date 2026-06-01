@@ -24,3 +24,4 @@ class Document(TimestampMixin, Base):
 
     uploader = relationship("User", back_populates="documents")
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
+    permissions = relationship("DocumentPermission", back_populates="document", cascade="all, delete-orphan")

@@ -25,6 +25,12 @@ export type ApprovalDecisionResponse = {
   message: string
 }
 
+export type MobileApprovalDetail = {
+  approval: ApprovalItem
+  instance?: Record<string, unknown> | null
+  message: string
+}
+
 const managerRoleConfig = {
   headers: {
     'X-User-Role': 'manager',
@@ -56,5 +62,27 @@ export function rejectApproval(approvalId: number, payload: ApprovalDecisionRequ
     `/approvals/${approvalId}/reject`,
     payload,
     managerRoleConfig,
+  )
+}
+
+export function getMobileApproval(approvalId: number, token?: string) {
+  return apiGet<MobileApprovalDetail>(`/mobile/approvals/${approvalId}`, {
+    params: token ? { token } : undefined,
+  })
+}
+
+export function approveMobileApproval(approvalId: number, payload: ApprovalDecisionRequest, token?: string) {
+  return apiPost<ApprovalDecisionResponse, ApprovalDecisionRequest>(
+    `/mobile/approvals/${approvalId}/approve`,
+    payload,
+    { params: token ? { token } : undefined },
+  )
+}
+
+export function rejectMobileApproval(approvalId: number, payload: ApprovalDecisionRequest, token?: string) {
+  return apiPost<ApprovalDecisionResponse, ApprovalDecisionRequest>(
+    `/mobile/approvals/${approvalId}/reject`,
+    payload,
+    { params: token ? { token } : undefined },
   )
 }

@@ -33,7 +33,7 @@ class UserRead(UserBase, ORMModel):
 
 
 class LoginRequest(BaseModel):
-    """本地身份模拟登录请求。"""
+    """本地演示登录请求。"""
 
     username: str = Field(..., min_length=1, description="用户名")
     role: UserRole = Field(default=UserRole.EMPLOYEE, description="用户角色")
@@ -41,10 +41,9 @@ class LoginRequest(BaseModel):
 
 
 class LoginResponse(BaseModel):
-    """本地身份模拟登录响应。"""
+    """本地演示登录响应。"""
 
     access_token: str = Field(..., description="访问令牌")
     token_type: str = Field(default="bearer", description="令牌类型")
     user: UserRead | dict = Field(..., description="用户信息")
     message: str = Field(..., description="说明信息")
-

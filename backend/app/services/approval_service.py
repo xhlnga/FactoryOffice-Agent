@@ -1,24 +1,40 @@
 from datetime import date
+from dataclasses import asdict
 from typing import Any
 
 from fastapi import status
 from pydantic import ValidationError
-from sqlalchemy import func, select
+from sqlalchemy import func, inspect, select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.core.auth import create_session_token
+from app.core.config import settings
 from app.core.exceptions import AppException
+from app.integrations.core.schemas import IntegrationPlatform
+from app.integrations.services.notification_service import NotificationService
 from app.models.approval import Approval
-from app.models.base import ApprovalStatus, AuditStatus, utc_now
+from app.models.base import ApprovalStatus, AuditStatus, IntegrationConfigStatus, utc_now
+from app.models.integration_config import IntegrationConfig
 from app.schemas.approval import ApprovalCreateRequest, ApprovalDecisionRequest
+from app.schemas.approval_template import ApprovalTransferRequest, ApprovalWithdrawRequest
 from app.schemas.audit_log import AuditLogCreateRequest
 from app.schemas.purchase_request import PurchaseCreateRequest
 from app.schemas.task import TaskCreateRequest
 from app.schemas.ticket import TicketCreateRequest
 from app.services.audit_service import create_audit_log
 from app.services.document_service import delete_document
+from app.services.approval_engine import (
+    approve_instance_for_approval,
+    create_instance_for_approval,
+    reject_instance_for_approval,
+    transfer_instance_for_approval,
+    withdraw_instance_for_approval,
+)
 from app.services.purchase_service import create_purchase_request
 from app.services.task_service import create_task
 from app.services.ticket_service import create_ticket
+from app.services.business_sync_service import sync_approval_execution_result
 
 
 EXECUTABLE_ACTION_TYPES = {
@@ -41,6 +57,9 @@ def create_approval(db: Session, data: ApprovalCreateRequest) -> Approval:
         )
     approval = Approval(**data.model_dump(), status=ApprovalStatus.PENDING)
     db.add(approval)
+    db.flush()
+    create_instance_for_approval(db, approval, commit=False)
+    _notify_approval_created_if_configured(db, approval)
     db.commit()
     db.refresh(approval)
     return approval
@@ -97,6 +116,22 @@ def approve_approval(db: Session, approval_id: int, data: ApprovalDecisionReques
     approval.reviewer = data.reviewer
     approval.comment = data.comment
     approval.reviewed_at = utc_now()
+    instance = approve_instance_for_approval(
+        db,
+        approval,
+        actor_name=data.reviewer,
+        comment=data.comment,
+        commit=False,
+    )
+    if instance is not None and str(instance.status.value) != "approved":
+        approval.execution_result = {
+            "approval_instance_id": instance.id,
+            "approval_instance_status": instance.status.value,
+            "message": "当前审批步骤已通过，等待后续审批步骤完成后再执行业务动作。",
+        }
+        db.commit()
+        db.refresh(approval)
+        return approval
 
     try:
         result = execute_approved_action(db, approval)
@@ -131,6 +166,14 @@ def approve_approval(db: Session, approval_id: int, data: ApprovalDecisionReques
     approval.execution_result = result
     db.commit()
     db.refresh(approval)
+    sync_records = sync_approval_execution_result(db, approval, commit=False)
+    if sync_records:
+        approval.execution_result = {
+            **(approval.execution_result or {}),
+            "external_sync": [asdict(record) for record in sync_records],
+        }
+        db.commit()
+        db.refresh(approval)
     return approval
 
 
@@ -140,10 +183,66 @@ def reject_approval(db: Session, approval_id: int, data: ApprovalDecisionRequest
     if approval.status != ApprovalStatus.PENDING:
         raise AppException("只有待审批记录可以拒绝。", status_code=status.HTTP_409_CONFLICT)
 
+    reject_instance_for_approval(
+        db,
+        approval,
+        actor_name=data.reviewer,
+        comment=data.comment,
+        commit=False,
+    )
     approval.status = ApprovalStatus.REJECTED
     approval.reviewer = data.reviewer
     approval.comment = data.comment
     approval.reviewed_at = utc_now()
+    db.commit()
+    db.refresh(approval)
+    return approval
+
+
+def transfer_approval(db: Session, approval_id: int, data: ApprovalTransferRequest) -> Approval:
+    """转交当前审批步骤。"""
+    approval = get_approval(db, approval_id)
+    if approval.status != ApprovalStatus.PENDING:
+        raise AppException("只有待审批记录可以转交。", status_code=status.HTTP_409_CONFLICT)
+
+    transfer_instance_for_approval(
+        db,
+        approval,
+        actor_name=data.actor_name,
+        to_approver=data.to_approver,
+        comment=data.comment,
+        commit=False,
+    )
+    approval.reviewer = data.to_approver
+    approval.comment = data.comment
+    approval.execution_result = {
+        "message": "审批已转交，业务动作仍需审批通过后才能执行。",
+        "to_approver": data.to_approver,
+    }
+    db.commit()
+    db.refresh(approval)
+    return approval
+
+
+def withdraw_approval(db: Session, approval_id: int, data: ApprovalWithdrawRequest) -> Approval:
+    """撤回待审批动作。"""
+    approval = get_approval(db, approval_id)
+    if approval.status != ApprovalStatus.PENDING:
+        raise AppException("只有待审批记录可以撤回。", status_code=status.HTTP_409_CONFLICT)
+
+    withdraw_instance_for_approval(
+        db,
+        approval,
+        actor_name=data.actor_name,
+        comment=data.comment,
+        commit=False,
+    )
+    # 兼容旧 approvals 状态：撤回后不再执行，旧表用 rejected 表示已终止。
+    approval.status = ApprovalStatus.REJECTED
+    approval.reviewer = data.actor_name
+    approval.comment = data.comment or "申请人撤回。"
+    approval.reviewed_at = utc_now()
+    approval.execution_result = {"message": "审批已撤回，业务动作不会执行。"}
     db.commit()
     db.refresh(approval)
     return approval
@@ -292,3 +391,92 @@ def _write_audit_log_if_possible(db: Session, data: AuditLogCreateRequest) -> No
     if not all(hasattr(db, attr) for attr in ("add", "flush")):
         return
     create_audit_log(db, data, commit=False)
+
+
+def _build_mobile_approval_url(approval: Approval) -> str:
+    """构造带签名 token 的移动审批链接。
+
+    移动审批链接会通过企业微信、钉钉、飞书或通用 webhook 发给审批人。企业场景下
+    不能只暴露审批 ID，所以这里附带一个短期签名 token。生产接入时可以替换为企业
+    SSO 登录态或一次性审批令牌。
+    """
+    token = create_session_token(
+        {
+            "purpose": "mobile_approval",
+            "approval_id": approval.id,
+            "action_type": approval.action_type,
+        },
+        expires_minutes=60 * 24 * 7,
+    )
+    return f"{settings.frontend_base_url.rstrip('/')}/mobile/approvals/{approval.id}?token={token}"
+
+
+def _notify_approval_created_if_configured(db: Session, approval: Approval) -> None:
+    """审批创建后发送待办通知；通知失败不阻断审批创建。"""
+    if not all(hasattr(db, attr) for attr in ("scalars", "add", "flush")):
+        return
+    try:
+        if not inspect(db.connection()).has_table("integration_configs"):
+            return
+    except SQLAlchemyError:
+        return
+
+    try:
+        config = db.scalars(
+            select(IntegrationConfig)
+            .where(IntegrationConfig.status == IntegrationConfigStatus.ACTIVE)
+            .where(
+                IntegrationConfig.platform.in_(
+                    [
+                        IntegrationPlatform.LOCAL.value,
+                        IntegrationPlatform.GENERIC_WEBHOOK.value,
+                        IntegrationPlatform.WECOM.value,
+                        IntegrationPlatform.DINGTALK.value,
+                        IntegrationPlatform.FEISHU.value,
+                    ]
+                )
+            )
+            .order_by(IntegrationConfig.id.asc())
+            .limit(1)
+        ).first()
+    except SQLAlchemyError:
+        return
+    if config is None:
+        return
+
+    try:
+        platform = IntegrationPlatform(config.platform)
+    except ValueError:
+        return
+
+    notification_config = dict(config.encrypted_config or {})
+    if config.webhook_url:
+        notification_config["webhook_url"] = config.webhook_url
+    action_url = _build_mobile_approval_url(approval)
+    title = f"待审批：{approval.action_type}"
+    summary = "AI 已生成需要人工确认的业务动作，请在审批页核对参数后处理。"
+
+    try:
+        NotificationService().notify_approval_created(
+            db=db,
+            platform=platform,
+            approval_id=approval.id,
+            title=title,
+            summary=summary,
+            config=notification_config,
+            enterprise_id=config.enterprise_id,
+            action_url=action_url,
+            commit=False,
+        )
+    except Exception as exc:  # noqa: BLE001 - 通知失败必须被业务审批兜住
+        _write_audit_log_if_possible(
+            db,
+            AuditLogCreateRequest(
+                action="approval_notification_failed",
+                input=str({"approval_id": approval.id, "platform": config.platform}),
+                output=str({"error": str(exc)}),
+                tool_name="notification_service",
+                tool_args={"approval_id": approval.id, "platform": config.platform},
+                status=AuditStatus.FAILED,
+            ),
+        )

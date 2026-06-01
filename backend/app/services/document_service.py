@@ -16,6 +16,12 @@ from app.rag.text_splitter import split_text
 from app.rag.vector_store import create_document_chunks
 from app.schemas.document import DocumentCreate
 from app.services.approval_guard import ensure_approved_action
+from app.services.permission_service import (
+    DocumentAccessContext,
+    can_access_document,
+    create_default_document_permissions,
+    ensure_document_access,
+)
 from app.utils.file_utils import (
     file_suffix,
     new_sha256_digest,
@@ -106,6 +112,7 @@ async def save_upload_and_create_document(
     *,
     category: str = "未分类",
     uploaded_by: int | None = None,
+    auth_context: DocumentAccessContext | None = None,
 ) -> Document:
     """保存上传文件并创建文档记录。"""
     saved_file = await save_upload_file(file)
@@ -127,34 +134,55 @@ async def save_upload_and_create_document(
         content_type=file.content_type,
         file_size_bytes=saved_file.size_bytes,
         file_sha256=saved_file.sha256,
-        uploaded_by=uploaded_by,
+        uploaded_by=uploaded_by if uploaded_by is not None else (auth_context.user_id if auth_context else None),
     )
     try:
-        return create_document(db, document_data)
+        document = create_document(db, document_data)
+        create_default_document_permissions(db, document, auth_context, commit=True)
+        return document
     except Exception:
         unlink_if_exists(saved_file.path)
         raise
 
 
-def list_documents(db: Session, *, offset: int = 0, limit: int = 20) -> tuple[list[Document], int]:
+def list_documents(
+    db: Session,
+    *,
+    offset: int = 0,
+    limit: int = 20,
+    auth_context: DocumentAccessContext | None = None,
+) -> tuple[list[Document], int]:
     """分页查询未删除文档列表。"""
     active_filter = Document.deleted_at.is_(None)
-    total = db.scalar(select(func.count()).select_from(Document).where(active_filter)) or 0
-    items = db.scalars(
-        select(Document)
-        .where(active_filter)
-        .order_by(Document.created_at.desc())
-        .offset(offset)
-        .limit(limit)
-    ).all()
-    return list(items), total
+    if auth_context is None:
+        total = db.scalar(select(func.count()).select_from(Document).where(active_filter)) or 0
+        items = db.scalars(
+            select(Document)
+            .where(active_filter)
+            .order_by(Document.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        ).all()
+        return list(items), total
+
+    # 文档列表通常不会很大；这里先保守过滤，避免不同数据库方言下权限 SQL 差异影响演示。
+    all_items = list(db.scalars(select(Document).where(active_filter).order_by(Document.created_at.desc())).all())
+    visible_items = [item for item in all_items if can_access_document(db, item, auth_context)]
+    return visible_items[offset: offset + limit], len(visible_items)
 
 
-def get_document(db: Session, document_id: int, *, include_deleted: bool = False) -> Document:
+def get_document(
+    db: Session,
+    document_id: int,
+    *,
+    include_deleted: bool = False,
+    auth_context: DocumentAccessContext | None = None,
+) -> Document:
     """查询文档详情，不存在时抛出业务异常。"""
     document = db.get(Document, document_id)
     if document is None or (document.deleted_at is not None and not include_deleted):
         raise AppException("文档不存在。", status_code=status.HTTP_404_NOT_FOUND)
+    ensure_document_access(db, document, auth_context)
     return document
 
 

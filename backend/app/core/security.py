@@ -48,20 +48,22 @@ def has_role_level(current_role: UserRole, required_role: UserRole) -> bool:
 def get_request_role(
     x_user_role: Annotated[str | None, Header(alias="X-User-Role")] = None,
 ) -> UserRole:
-    """从请求头读取模拟角色，未提供时默认为普通员工。"""
+    """从演示请求头读取角色，未提供时默认为普通员工。"""
     return parse_role(x_user_role)
 
 
 def require_role(required_role: UserRole):
     """生成 FastAPI 权限依赖函数。
 
+    Bearer token 优先；X-User-Role 只作为本地演示兼容入口。
     示例：Depends(require_role(UserRole.MANAGER))
     """
 
     def dependency(
         x_user_role: Annotated[str | None, Header(alias="X-User-Role")] = None,
+        authorization: Annotated[str | None, Header(alias="Authorization")] = None,
     ) -> UserRole:
-        role = parse_role(x_user_role)
+        role = _role_from_bearer_token(authorization) or parse_role(x_user_role)
         if not has_role_level(role, required_role):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -70,3 +72,15 @@ def require_role(required_role: UserRole):
         return role
 
     return dependency
+
+
+def _role_from_bearer_token(authorization: str | None) -> UserRole | None:
+    """从本地会话 token 读取角色，保留 X-User-Role 演示头作为兜底。"""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+
+    # 延迟导入避免 auth.py 与 security.py 在模块加载阶段互相引用。
+    from app.core.auth import decode_session_token
+
+    payload = decode_session_token(authorization.split(" ", 1)[1].strip())
+    return parse_role(str(payload.get("role") or UserRole.EMPLOYEE.value))
